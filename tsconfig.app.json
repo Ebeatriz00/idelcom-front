@@ -1,0 +1,49 @@
+{
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+    "target": "ES2022",
+    "useDefineForClassFields": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+
+    "typeRoots": ["./node_modules/@types", "./sharedKernel/types"],
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "jsx": "react-jsx",
+
+    /* Path mapping (replaces baseUrl) */
+    "paths": {
+      "@/*": ["./src/*"],
+      "@pages/*": ["./src/pages/*"],
+      "@infrastructure/*": ["./src/infrastructure/*"],
+      "@api/*": ["./src/infrastructure/api-clients/*"],
+      "@application/*": ["./src/application/*"],
+      "@core/*": ["./src/core/entities/*"],
+      "@dtos/*": ["./src/application/dtos/*"],
+      "@adapters/*": ["./src/application/adapters/*"],
+      "@layouts/*": ["./src/layouts/*"],
+      "@shared/*": ["./src/sharedKernel/*"],
+      "@lib/*": ["./src/sharedKernel/lib/*"],
+      "@hooks/*": ["./src/sharedKernel/hooks/*"],
+      "@routes/*": ["./src/routes/*"],
+      "@stores/*": ["./src/stores/*"],
+      "@components/*": ["./src/presentation/components/ui/*"]
+    },
+
+    /* Linting */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "erasableSyntaxOnly": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedSideEffectImports": true
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
+}

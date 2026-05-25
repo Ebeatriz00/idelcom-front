@@ -1,0 +1,335 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+@import "tailwindcss";
+
+/* Paleta de colores */
+@theme {
+  --color-primary: #ff6f00;
+  --color-secondary: #1b263b;
+  --color-primary-degrad: #fff0e6;
+  --color-accent: #00bfa6;
+  --color-background: #f5f5f5;
+  --color-foreground: var(--color-secondary);
+  --color-muted: #e9eef3;
+  --color-muted-foreground: #5a6b83;
+  --color-destructive: #dc2626;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Poppins", ui-sans-serif, system-ui, sans-serif;
+}
+
+/* ====== GlueMark UI Utils ====== */
+@utility card {
+  @apply bg-white rounded-2xl shadow-lg border border-secondary/10;
+}
+@utility card-section {
+  @apply px-6 py-5;
+}
+@utility form-title {
+  @apply text-xl font-display font-bold text-secondary;
+}
+@utility form-subtitle {
+  @apply text-sm text-secondary/70 font-sans;
+}
+@utility input {
+  @apply w-full px-4 py-2 bg-white border border-secondary/20 rounded-lg
+         placeholder-secondary/50 text-secondary font-sans
+         focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent;
+}
+@utility btn {
+  @apply inline-flex items-center justify-center rounded-lg bg-primary text-white
+         px-4 py-2.5 font-display font-semibold hover:bg-accent transition
+         disabled:opacity-50;
+}
+@utility alert-error {
+  @apply text-red-700 bg-red-50 border border-red-200 rounded-lg p-3 text-sm font-sans;
+}
+@utility alert-warn {
+  @apply text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm font-sans;
+}
+@utility help-list {
+  @apply text-xs text-secondary/70 list-disc pl-5;
+}
+@utility timer-badge {
+  @apply inline-flex items-center gap-1 rounded-full bg-secondary/10 text-secondary px-2 py-0.5 text-xs font-medium;
+}
+
+/* Global */
+body {
+  @apply bg-background text-secondary font-sans;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+@keyframes ping-soft {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.3);
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.badge-ping {
+  animation: ping-soft 1.5s infinite;
+}
+
+@keyframes rowActiveFade {
+  0% {
+    background-color: transparent;
+    border-left-color: transparent;
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+  100% {
+    background-color: #eff6ff; /* azul tailwind 50 */
+    border-left-color: #3b82f6; /* azul 500 */
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes reminderPulse {
+  0% {
+    background-color: rgba(244, 63, 94, 0.08);
+  }
+  50% {
+    background-color: rgba(244, 63, 94, 0.18);
+  }
+  100% {
+    background-color: rgba(244, 63, 94, 0.08);
+  }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-1px); }
+  75% { transform: translateX(1px); }
+}
+
+.animate-shake {
+  animation: shake 0.4s ease-in-out infinite;
+}
+
+.reminder-alert {
+  animation: reminderPulse 2s ease-in-out infinite;
+}
+
+.row-active {
+  animation: rowActiveFade 0.25s ease-out forwards;
+}
+
+.erp-swal-body{
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.erp-swal-actions{
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 10px !important;
+  padding-top: 14px !important;
+}
+
+.erp-swal-confirm:hover{
+  filter: brightness(1.05);
+}
+.erp-swal-popup2{
+  border-radius: 14px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  box-shadow: 0 18px 50px rgba(0,0,0,.18) !important;
+  border: 1px solid #E5E7EB !important;
+}
+
+/* Header con acento sutil */
+.erp-swal-title2{
+  margin: 0 !important;
+  padding: 14px 16px !important;
+  font-size: 15px !important;
+  font-weight: 800 !important;
+  text-align: left !important;
+  color: #111827 !important;
+  background: linear-gradient(90deg, rgba(37,99,235,.10), rgba(37,99,235,0));
+  border-bottom: 1px solid #EEF2F7 !important;
+}
+
+.erp-swal-body2{
+  padding: 12px 16px 0 16px !important;
+  margin: 0 !important;
+}
+
+.erp-swal-wrap{
+  text-align: left;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #374151;
+}
+
+.erp-swal-sub{
+  margin: 0 0 10px 0;
+}
+
+/* Badge sobrio */
+.erp-badge{
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 12px;
+  color: #1D4ED8;
+  background: rgba(255, 111, 0,.12);
+  border: 1px solid rgba(255, 111, 0,.22);
+  vertical-align: middle;
+}
+
+/* Callout moderno */
+.erp-swal-callout{
+  border: 1px solid #DBEAFE;
+  background: #fff1e6;
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin: 8px 0 12px 0;
+}
+
+.erp-swal-callout-title{
+  font-weight: 800;
+  font-size: 12px;
+  color: #1D4ED8;
+  margin-bottom: 3px;
+  letter-spacing: .2px;
+}
+
+.erp-swal-callout-text{
+  color: #1F2937;
+  font-size: 13px;
+}
+
+.erp-swal-q{
+  margin-top: 10px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 14px;
+  color: #1F2937;
+}
+
+/* Actions */
+.erp-swal-actions2{
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 10px !important;
+  padding: 12px 16px 14px 16px !important;
+  border-top: 1px solid #EEF2F7 !important;
+  background: #fff !important;
+}
+
+.erp-swal-cancel2{
+  background: #F9FAFB !important;
+  border: 1px solid #E5E7EB !important;
+  color: #374151 !important;
+  font-weight: 700 !important;
+  border-radius: 10px !important;
+  padding: 9px 14px !important;
+}
+
+.erp-swal-confirm2{
+  background: #ff6f00 !important; /* azul corporativo */
+  border: 1px solid #E5E7EB !important;
+  color: #FFFFFF !important;
+  font-weight: 800 !important;
+  border-radius: 10px !important;
+  padding: 9px 14px !important;
+}
+
+.erp-swal-confirm2:hover{
+  filter: brightness(1.05);
+}
+
+.erp-popup{
+  border-radius: 12px !important;
+  padding: 18px !important;
+  background: #ffffff !important;
+  box-shadow: 0 25px 60px rgba(0,0,0,.15) !important;
+  border: 1px solid #E5E7EB !important;
+}
+
+.erp-title{
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  text-align: left !important;
+  margin-bottom: 8px !important;
+  color: #111827 !important;
+}
+
+.erp-body{
+  padding: 0 !important;
+}
+
+.erp-wrap{
+  font-size: 14px;
+  color: #374151;
+  line-height: 1.6;
+}
+
+.erp-text{
+  margin-bottom: 10px;
+}
+
+.erp-pill{
+  background: #1D4ED8;
+  color: white;
+  font-weight: 700;
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.erp-note{
+  color: #6B7280;
+  margin-bottom: 14px;
+}
+
+.erp-question{
+  font-weight: 600;
+  color: #111827;
+}
+
+.erp-actions{
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 10px !important;
+  margin-top: 14px !important;
+}
+
+.erp-btn-secondary{
+  background: #F3F4F6 !important;
+  border: 1px solid #E5E7EB !important;
+  color: #374151 !important;
+  border-radius: 8px !important;
+  padding: 8px 14px !important;
+  font-weight: 600 !important;
+}
+
+.erp-btn-primary{
+  background: #1F2937 !important;
+  border: 1px solid #111827 !important;
+  color: #ffffff !important;
+  border-radius: 8px !important;
+  padding: 8px 16px !important;
+  font-weight: 700 !important;
+}
+
+.erp-btn-primary:hover{
+  filter: brightness(1.05);
+}

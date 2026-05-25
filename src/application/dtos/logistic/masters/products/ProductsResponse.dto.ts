@@ -1,0 +1,34 @@
+export interface ProductsResponseDto {
+  productsId?: number;
+  businessId?: number;
+  sku?: string;
+  barcode?: string;
+  partNum?: string;
+  shortDescription?: string;
+  productTypeId?: number;
+  productLinesId?: number;
+  categoriesId?: number;
+  brandsId?: number;
+  uomId?: number;
+  description?: string;
+  categoriesDescription?: string;
+  linesDescription?: string;
+  typesDescription?: string;
+  brandsDescription?: string;
+  stockMin?: number;
+  stockMax?: number;
+  conversionFactor?: number;
+  weight?: number;
+  volume?: number;
+  isActive?: boolean;
+  isStockable?: boolean;
+  isServices?: boolean;
+  isReturnable?: boolean;
+  isTool?: boolean;
+  canBuy?: boolean;
+  canSell?: boolean;
+  manageLots?: boolean;
+  manegesSerials?: boolean;
+  expirationControl?: boolean;
+  status?: string;
+}

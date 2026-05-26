@@ -4,7 +4,7 @@ import { runCoordinatedAuthRefresh } from "@/infrastructure/http/refresh-session
 import { getBusinessIdFromStorage, getUserIdFromtStorage } from "@/stores";
 
 export async function fetchAuthLogin(payload: any): Promise<any> {
-  const { data } = await http.post("/Auth/login", payload);
+  const { data } = await http.post("/Auth/login", payload, { timeout: 20000 });
   return data;
 }
 

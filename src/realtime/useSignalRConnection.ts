@@ -45,8 +45,8 @@ export function useSignalRConnection() {
 
       connectionAttempts.current++;
 
-      ensureNotificationsStarted().catch((err) => {
-        const msg = String(err?.message || "");
+      ensureNotificationsStarted().catch((err: unknown) => {
+        const msg = String((err as { message?: string })?.message || "");
 
         if (
           msg.includes("Failed to fetch") ||
@@ -71,9 +71,11 @@ export function useSignalRConnection() {
           msg.toLowerCase().includes("forbidden")
         ) {
           console.warn("[WS] SignalR no autorizado, intentando refrescar sesion");
-          refreshAccessToken().catch(() => {
-            expireToken?.("signalr_auth_failed");
-          });
+          refreshAccessToken()
+            .then(() => ensureNotificationsStarted())
+            .catch(() => {
+              expireToken?.("signalr_auth_failed");
+            });
           return;
         }
 

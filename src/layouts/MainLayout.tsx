@@ -15,7 +15,6 @@ import { ServerDownScreen } from "./components/ServerDownScreen";
 export default function MainLayout() {
   const locked = useAuthStore(selectLocked);
   const lockReason = useAuth((s) => s.lockReason);
-  const lock = useAuthStore((s) => s.lock);
 
   const [isServerDown, setIsServerDown] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -33,8 +32,6 @@ export default function MainLayout() {
   const hoverOpen = useUI((s) => s.hoverOpen);
   const isOpenDesktop = !collapsed || hoverOpen;
 
-  const lockRef = useRef<typeof lock | null>(null);
-  lockRef.current = lock;
   const qc = useQueryClient();
   useEffect(() => {
     const onLogin = async () => {
@@ -78,12 +75,23 @@ export default function MainLayout() {
     const handleBackendDown = () => {
       console.log("[MainLayout] Evento backend-down recibido");
       setIsServerDown(true);
-      lock("server_down");
     };
 
     const handleBackendRecovered = () => {
       console.log("[MainLayout] Evento backend-recovered recibido");
       setIsServerDown(false);
+
+      const state = useAuth.getState();
+      if (state.locked && state.lockReason === "server_down") {
+        useAuth.setState((s) => ({
+          ...s,
+          token: s.userId && s.businessId ? "http-only" : s.token,
+          refreshToken: s.userId && s.businessId ? "http-only" : s.refreshToken,
+          isAuthenticated: !!s.userId && !!s.businessId,
+          locked: false,
+          lockReason: undefined,
+        }));
+      }
     };
 
     window.addEventListener("backend-down", handleBackendDown);
@@ -93,7 +101,7 @@ export default function MainLayout() {
       window.removeEventListener("backend-down", handleBackendDown);
       window.removeEventListener("backend-recovered", handleBackendRecovered);
     };
-  }, [lock]);
+  }, []);
 
   const shouldShowServerDown =
     isServerDown || (locked && lockReason === "server_down");

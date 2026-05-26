@@ -1,5 +1,9 @@
 import type { AxiosInstance } from "axios";
 import { runCoordinatedAuthRefresh } from "./refresh-session";
+import {
+  markBackendDown,
+  markBackendRecovered,
+} from "@/interceptors/network.interceptor";
 
 const AUTH_REFRESH_EXCLUDED_PATHS = [
   "/auth/login",
@@ -20,14 +24,33 @@ function shouldTryAuthRefresh(error: any) {
   );
 }
 
+function isConnectionError(error: any) {
+  return (
+    !error?.response ||
+    error?.code === "ERR_NETWORK" ||
+    error?.code === "ECONNABORTED" ||
+    error?.code === "ETIMEDOUT" ||
+    error?.message?.includes("Network Error") ||
+    error?.message?.includes("ERR_CONNECTION_REFUSED") ||
+    error?.message?.toLowerCase?.().includes("timeout")
+  );
+}
+
 export function setupInterceptors(http: AxiosInstance) {
   http.interceptors.request.use((config) => {
     return config;
   });
 
   http.interceptors.response.use(
-    (r) => r,
+    (r) => {
+      markBackendRecovered();
+      return r;
+    },
     async (error) => {
+      if (isConnectionError(error)) {
+        markBackendDown();
+      }
+
       const status = error?.response?.status;
       if (
         status &&

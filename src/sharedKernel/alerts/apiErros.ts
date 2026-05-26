@@ -20,6 +20,29 @@ function parseRetryAfterMs(headers?: Record<string, any>): number | undefined {
 }
 
 export function parseApiError(e: any): ParsedApiError {
+  if (
+    !e?.response &&
+    (e?.code === "ECONNABORTED" ||
+      e?.code === "ETIMEDOUT" ||
+      e?.message?.toLowerCase?.().includes("timeout"))
+  ) {
+    return {
+      topCode: "REQUEST_TIMEOUT",
+      message:
+        "El servidor no respondio a tiempo. Intenta nuevamente en unos segundos.",
+      errors: [],
+    };
+  }
+
+  if (!e?.response && (e?.code === "ERR_NETWORK" || e?.isNetworkError)) {
+    return {
+      topCode: "NETWORK_ERROR",
+      message:
+        "No se pudo conectar con el servidor. Verifica la conexion e intenta nuevamente.",
+      errors: [],
+    };
+  }
+
   const res = e?.response;
   const data: Partial<GlobalError> = res?.data ?? e?.data ?? e ?? {};
 

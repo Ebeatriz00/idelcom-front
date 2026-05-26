@@ -88,7 +88,7 @@ export function useNotifications() {
     conn.off("notify", handler);
     conn.on("notify", handler);
 
-    ensureNotificationsStarted().catch((err) => {
+    ensureNotificationsStarted().catch((err: unknown) => {
       console.debug("[WS] Inicio diferido omitido:", err);
     });
 

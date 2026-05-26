@@ -1,22 +1,22 @@
-import { useState, useEffect, useCallback } from "react";
-import { Modal, Button } from "@/layouts";
-import { Loader2, Plus, List } from "lucide-react";
-import { useForm, Controller } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { format } from "date-fns";
-import {
-  useSquadList,
-  useAssignmentList,
-  useDeleteAssignment,
-  confirmAction,
-  useCreateWorkOrder,
-  useConfigProjectById,
-} from "@/sharedKernel";
-import { CrewCard } from "./squads/CrewCard";
-import { SearchSelect } from "@/layouts/components/ui/search-select/searchSelect";
-import { useWorkerOperationsOptions, useWorkerSquadOptions } from "@/sharedKernel/hooks/rrhh/useWorkerList";
 import type { OperationsSquadResponseDto, OptionItem } from "@/application";
+import { Button, Modal } from "@/layouts";
+import { SearchSelect } from "@/layouts/components/ui/search-select/searchSelect";
+import {
+  confirmAction,
+  useAssignmentList,
+  useConfigProjectById,
+  useCreateWorkOrder,
+  useDeleteAssignment,
+  useSquadList,
+} from "@/sharedKernel";
+import { useWorkerSquadOptions } from "@/sharedKernel/hooks/rrhh/useWorkerList";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { format } from "date-fns";
+import { List, Loader2, Plus } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import * as z from "zod";
+import { CrewCard } from "./squads/CrewCard";
 
 // --- VALIDATION SCHEMA FOR CREATION ---
 const schema = z.object({
@@ -53,7 +53,7 @@ export function AdminSquadsManagerModal({
   onAddMember,
 }: AdminSquadsManagerModalProps) {
   const [activeTab, setActiveTab] = useState<"list" | "create">("list");
-  
+
   // Reset tab when modal opens
   useEffect(() => {
     if (open) setActiveTab("list");
@@ -129,7 +129,9 @@ function ListTab({
   const { data: assignmentData } = useAssignmentList(0, 1000);
 
   const adminSquads = (squadsData?.items || []).filter(
-    (s) => s.squadCategory === "ADMINISTRATIVE" && workOrderIds.includes(s.workOrderId)
+    (s) =>
+      s.squadCategory === "ADMINISTRATIVE" &&
+      workOrderIds.includes(s.workOrderId),
   );
 
   const getMembersForSquad = (squadId: number) =>
@@ -194,10 +196,12 @@ function CreateTab({
     (page: number, search: string, pageSize: number) => {
       return useWorkerSquadOptions(operationsId, page, search, pageSize);
     },
-    [operationsId]
+    [operationsId],
   );
 
-  const sortedConfigs = [...(configs || [])].sort((a, b) => (a.shift || 0) - (b.shift || 0));
+  const sortedConfigs = [...(configs || [])].sort(
+    (a, b) => (a.shift || 0) - (b.shift || 0),
+  );
 
   const {
     register,
@@ -232,9 +236,13 @@ function CreateTab({
         needAttendance: true,
         progressPercentage: 0,
         isAdministrative: true,
-        techLeaderId: formData.techLeaderId ? Number(formData.techLeaderId) : null,
+        techLeaderId: formData.techLeaderId
+          ? Number(formData.techLeaderId)
+          : null,
         description: formData.description,
-        operationsProjectConfigId: formData.operationsProjectConfigId ? Number(formData.operationsProjectConfigId) : null,
+        operationsProjectConfigId: formData.operationsProjectConfigId
+          ? Number(formData.operationsProjectConfigId)
+          : null,
       };
 
       await createWorkOrder(payload as any);
@@ -251,23 +259,35 @@ function CreateTab({
   return (
     <div className="flex flex-col h-full bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
       <div className="p-5 flex-1 overflow-y-auto">
-        <form id={formId} onSubmit={handleSubmit(handleFormSubmit)} className="space-y-5">
+        <form
+          id={formId}
+          onSubmit={handleSubmit(handleFormSubmit)}
+          className="space-y-5"
+        >
           <div className="space-y-1">
-            <label className="text-xs font-bold text-gray-600 uppercase">Nombre de la Cuadrilla</label>
+            <label className="text-xs font-bold text-gray-600 uppercase">
+              Nombre de la Cuadrilla
+            </label>
             <input
               placeholder="Ej: Equipo Administrativo"
               {...register("squadName")}
               className={`w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${
-                errors.squadName ? "border-red-500 bg-red-50" : "border-gray-300"
+                errors.squadName
+                  ? "border-red-500 bg-red-50"
+                  : "border-gray-300"
               }`}
             />
             {errors.squadName && (
-              <p className="text-[10px] text-red-500 font-bold uppercase">{errors.squadName.message}</p>
+              <p className="text-[10px] text-red-500 font-bold uppercase">
+                {errors.squadName.message}
+              </p>
             )}
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-bold text-gray-600 uppercase">Descripción (Opcional)</label>
+            <label className="text-xs font-bold text-gray-600 uppercase">
+              Descripción (Opcional)
+            </label>
             <textarea
               placeholder="Ej: Personal administrativo y de soporte..."
               {...register("description")}
@@ -277,7 +297,9 @@ function CreateTab({
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-bold text-gray-600 uppercase">Líder Técnico de Cuadrilla</label>
+            <label className="text-xs font-bold text-gray-600 uppercase">
+              Líder Técnico de Cuadrilla
+            </label>
             <Controller
               control={control}
               name="techLeaderId"
@@ -295,23 +317,34 @@ function CreateTab({
               )}
             />
             {errors.techLeaderId && (
-              <p className="text-[10px] text-red-500 font-bold uppercase">{errors.techLeaderId.message}</p>
+              <p className="text-[10px] text-red-500 font-bold uppercase">
+                {errors.techLeaderId.message}
+              </p>
             )}
           </div>
 
           {sortedConfigs.length > 0 && (
             <div className="space-y-1">
-              <label className="text-xs font-bold text-gray-600 uppercase">Configuración de Turno Asignado</label>
+              <label className="text-xs font-bold text-gray-600 uppercase">
+                Configuración de Turno Asignado
+              </label>
               <select
                 {...register("operationsProjectConfigId", {
-                  setValueAs: (v) => (v === "" || v === "null" ? null : Number(v)),
+                  setValueAs: (v) =>
+                    v === "" || v === "null" ? null : Number(v),
                 })}
                 className="w-full rounded-md border border-gray-300 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-semibold text-slate-700 cursor-pointer"
               >
-                <option value="null">-- Sin turno específico (Opcional) --</option>
+                <option value="null">
+                  -- Sin turno específico (Opcional) --
+                </option>
                 {sortedConfigs.map((c) => (
-                  <option key={c.operationsProjectConfigId} value={c.operationsProjectConfigId}>
-                    Turno {c.shift || 1} ({c.entryTime?.substring(0, 5)} - {c.departureTime?.substring(0, 5)})
+                  <option
+                    key={c.operationsProjectConfigId}
+                    value={c.operationsProjectConfigId}
+                  >
+                    Turno {c.shift || 1} ({c.entryTime?.substring(0, 5)} -{" "}
+                    {c.departureTime?.substring(0, 5)})
                   </option>
                 ))}
               </select>
@@ -333,7 +366,7 @@ function CreateTab({
           type="submit"
           form={formId}
           disabled={internalSaving}
-          className="!bg-[#1A3673] !hover:bg-[#132856] text-white px-8"
+          className="bg-[#1A3673]! !hover:bg-[#132856] text-white px-8"
         >
           {internalSaving ? (
             <>

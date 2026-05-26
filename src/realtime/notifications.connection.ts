@@ -8,23 +8,52 @@ let instance: signalR.HubConnection | null = null;
 let startPromise: Promise<void> | null = null;
 let manualStop = false;
 let authErrorCount = 0;
-const MAX_AUTH_ERRORS = 3;
 let handlersWired = false;
 
-async function recoverSignalRAuthFailure(context: string) {
+function isSignalRAuthError(message: string) {
+  const normalized = message.toLowerCase();
+  return (
+    message.includes("401") ||
+    normalized.includes("unauthorized") ||
+    normalized.includes("forbidden") ||
+    message.includes("Usuario No Autorizado")
+  );
+}
+
+async function recoverSignalRAuthFailure(context: string): Promise<boolean> {
   const state = useAuth.getState();
 
   if (!state.isAuthenticated || state.locked) {
-    return;
+    return false;
   }
 
   try {
     console.warn(`[WS] ${context}. Intentando refrescar sesion antes de expirar.`);
     await state.refreshAccessToken?.();
     authErrorCount = 0;
+    return true;
   } catch (error) {
     console.error("[WS] No se pudo recuperar la sesion desde SignalR", error);
     state.expireToken?.("signalr_auth_failed");
+    return false;
+  }
+}
+
+async function refreshAndRestartSignalR(context: string): Promise<void> {
+  if (manualStop) return;
+
+  const recovered = await recoverSignalRAuthFailure(context);
+  if (!recovered || manualStop) return;
+
+  const authState = useAuth.getState();
+  if (!authState.isAuthenticated || authState.locked) return;
+
+  startPromise = null;
+
+  try {
+    await ensureNotificationsStarted();
+  } catch (error) {
+    console.error("[WS] No se pudo reconectar SignalR despues del refresh", error);
   }
 }
 
@@ -89,21 +118,10 @@ export function getNotificationsConn() {
       const msg = String(err?.message ?? "");
       console.warn("[WS] Conexion cerrada:", msg.substring(0, 200));
 
-      const isAuthError =
-        msg.includes("401") ||
-        msg.includes("Unauthorized") ||
-        msg.includes("Usuario No Autorizado");
-
-      if (isAuthError) {
+      if (isSignalRAuthError(msg)) {
         authErrorCount++;
         console.warn(`[WS] Error de auth #${authErrorCount}`);
-
-        if (authErrorCount >= MAX_AUTH_ERRORS) {
-          console.error("[WS] Maximos errores de auth alcanzados.");
-          void recoverSignalRAuthFailure(
-            "Maximos errores de auth en cierre de conexion",
-          );
-        }
+        void refreshAndRestartSignalR("SignalR cerro por auth");
         return;
       }
 
@@ -129,7 +147,7 @@ export function getNotificationsConn() {
   return instance;
 }
 
-export function ensureNotificationsStarted() {
+export function ensureNotificationsStarted(): Promise<void> {
   const authState = useAuth.getState();
 
   if (!authState.isAuthenticated || authState.locked) {
@@ -171,13 +189,18 @@ export function ensureNotificationsStarted() {
           return;
         }
 
-        if (msg.includes("401") || msg.includes("Unauthorized")) {
+        if (isSignalRAuthError(msg)) {
           authErrorCount++;
           console.error("[WS] Error 401 en inicio - No autorizado");
 
-          if (authErrorCount >= MAX_AUTH_ERRORS) {
-            await recoverSignalRAuthFailure("SignalR devolvio 401 al iniciar");
+          const recovered = await recoverSignalRAuthFailure(
+            "SignalR devolvio 401 al iniciar",
+          );
+          if (recovered) {
+            startPromise = null;
+            return ensureNotificationsStarted();
           }
+
           throw err;
         }
 

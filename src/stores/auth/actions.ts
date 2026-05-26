@@ -195,14 +195,7 @@ export function createAuthActions(
           isAuthenticated: true,
           locked: false,
         });
-      } catch (error: any) {
-        const parsed = parseApiError(error);
-        if (
-          parsed.topCode === "REFRESH_TOKEN_EXPIRED" ||
-          parsed.topCode === "REFRESH_TOKEN_INVALID"
-        ) {
-          get().expireToken("refresh_failed");
-        }
+      } catch (error) {
         throw error;
       }
     },

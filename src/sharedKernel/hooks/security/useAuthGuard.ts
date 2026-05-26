@@ -30,6 +30,7 @@ export function useAuthGuard({ onLock, refreshSkewSeconds = 60 }: Options) {
 
   const onLockRef = useRef(onLock);
   const isLocking = useRef(false);
+  const refreshUnauthorizedCount = useRef(0);
 
   useEffect(() => {
     onLockRef.current = onLock;
@@ -93,10 +94,22 @@ export function useAuthGuard({ onLock, refreshSkewSeconds = 60 }: Options) {
         console.log("[AuthGuard] Ejecutando refresh token...");
         await refreshAccessToken();
         await refetch();
+        refreshUnauthorizedCount.current = 0;
         console.log("[AuthGuard] Refresh token exitoso");
       } catch (e) {
         if (isUnauthorizedError(e)) {
-          console.warn("[AuthGuard] Refresh no autorizado, cerrando sesion");
+          refreshUnauthorizedCount.current += 1;
+          console.warn(
+            `[AuthGuard] Refresh no autorizado #${refreshUnauthorizedCount.current}, verificando sesion antes de cerrar`,
+          );
+
+          const sessionCheck = await refetch().catch(() => null);
+          if (sessionCheck?.data?.authenticated) {
+            console.warn(
+              "[AuthGuard] La sesion sigue activa; se evita logout por 401 aislado del refresh",
+            );
+            return;
+          }
         } else {
           console.error("[AuthGuard] Error en refresh token:", e);
         }

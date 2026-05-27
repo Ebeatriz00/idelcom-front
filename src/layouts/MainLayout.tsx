@@ -34,6 +34,11 @@ export default function MainLayout() {
 
   const qc = useQueryClient();
   useEffect(() => {
+    const onLogout = () => {
+      void qc.cancelQueries();
+      qc.clear();
+    };
+
     const onLogin = async () => {
       // corta cualquier request en curso
       await qc.cancelQueries({ queryKey: ["auth", "session"], exact: false });
@@ -50,7 +55,11 @@ export default function MainLayout() {
     };
 
     window.addEventListener("auth:login_success", onLogin);
-    return () => window.removeEventListener("auth:login_success", onLogin);
+    window.addEventListener("auth:logout", onLogout);
+    return () => {
+      window.removeEventListener("auth:login_success", onLogin);
+      window.removeEventListener("auth:logout", onLogout);
+    };
   }, [qc]);
   const handleLock = useCallback(() => {
     const s = useAuth.getState();

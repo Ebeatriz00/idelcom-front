@@ -110,7 +110,6 @@ export default function App() {
         } else {
           clearClientAuthState();
         }
-        console.log("[Bootstrap] Backend UP");
         markBackendRecovered();
         setBackendStatus("up");
       } catch (error: unknown) {
@@ -120,7 +119,6 @@ export default function App() {
           setBackendStatus("up");
           return;
         }
-        console.log("[Bootstrap] Backend DOWN");
         markBackendDown();
         setBackendStatus("down");
       }

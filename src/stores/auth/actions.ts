@@ -234,6 +234,28 @@ export function createAuthActions(
     },
 
     async logout() {
+      clearAuthData();
+      window.dispatchEvent(new CustomEvent("auth:logout"));
+
+      set({
+        token: null,
+        refreshToken: null,
+        userId: null,
+        userName: null,
+        profile: null,
+        workerId: "",
+        profilesId: null,
+        businessId: null,
+        businessName: null,
+        areasId: null,
+        usersVisibiliyId: null,
+        isAuthenticated: false,
+        error: null,
+        lockUntil: 0,
+        locked: false,
+        lockReason: undefined,
+      });
+
       await stopNotificationsConn();
       clearExpiryTimer();
       try {
@@ -244,8 +266,6 @@ export function createAuthActions(
 
       await clearAppCache();
       clearPersistedNotifications();
-
-      clearAuthData();
 
       set((s) => ({
         ...s,

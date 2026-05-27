@@ -1,6 +1,9 @@
 // ServerHealthCheck.tsx
 import http from "@/infrastructure";
-import { markBackendDown, markBackendRecovered } from "@/interceptors/network.interceptor";
+import {
+  markBackendDown,
+  markBackendRecovered,
+} from "@/interceptors/network.interceptor";
 import { useEffect } from "react";
 
 export function ServerHealthCheck() {
@@ -10,16 +13,8 @@ export function ServerHealthCheck() {
     const checkServerHealth = async () => {
       try {
         await http.head("/Health");
-        console.log("[HealthCheck] Backend disponible");
         markBackendRecovered();
-      } catch (error: any) {
-        console.log("[HealthCheck] Backend no responde", {
-          code: error?.code,
-          message: error?.message,
-          status: error?.response?.status,
-        });
-
-        // 🔥 FORZAR estado de backend caído
+      } catch {
         markBackendDown();
       }
     };

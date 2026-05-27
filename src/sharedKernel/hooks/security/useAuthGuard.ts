@@ -27,6 +27,7 @@ export function useAuthGuard({ onLock, refreshSkewSeconds = 60 }: Options) {
   const isManualLock = locked && lockReason === "manual";
   const refreshAccessToken = useAuth((s) => s.refreshAccessToken);
   const logout = useAuth((s) => s.logout);
+  const expireToken = useAuth((s) => s.expireToken);
 
   const onLockRef = useRef(onLock);
   const isLocking = useRef(false);
@@ -40,22 +41,18 @@ export function useAuthGuard({ onLock, refreshSkewSeconds = 60 }: Options) {
     if (isLoading || isLocking.current) return;
 
     if (isManualLock) {
-      console.log("[AuthGuard] Lock manual activo, no bloqueo ni refresco");
       return;
     }
 
     if (!isBackendAvailable()) {
-      console.log("[AuthGuard] Backend caido, no bloqueo por auth");
       return;
     }
 
     if (!hasConfirmedSession) {
-      console.log("[AuthGuard] Estado de sesion no confirmado, no bloqueo");
       return;
     }
 
     if (!authenticated) {
-      console.log("[AuthGuard] Usuario no autenticado, intentando refresh");
       isLocking.current = true;
 
       void (async () => {
@@ -63,9 +60,7 @@ export function useAuthGuard({ onLock, refreshSkewSeconds = 60 }: Options) {
           await refreshAccessToken();
           await refetch();
         } catch (error) {
-          if (isUnauthorizedError(error)) {
-            console.warn("[AuthGuard] Sesion expirada, cerrando estado local");
-          } else {
+          if (!isUnauthorizedError(error) && import.meta.env.DEV) {
             console.error("[AuthGuard] No se pudo recuperar la sesion:", error);
           }
           await logout();
@@ -80,44 +75,31 @@ export function useAuthGuard({ onLock, refreshSkewSeconds = 60 }: Options) {
     }
 
     const fireIn = Math.max(5, secondsLeft - refreshSkewSeconds);
-    console.log(`[AuthGuard] Programando refresh en ${fireIn} segundos`);
 
     const timer = window.setTimeout(async () => {
       const state = useAuth.getState();
       const nowManual = state.locked && state.lockReason === "manual";
       if (nowManual) {
-        console.log("[AuthGuard] Se activo lock manual, cancelo refresh");
         return;
       }
 
       try {
-        console.log("[AuthGuard] Ejecutando refresh token...");
         await refreshAccessToken();
         await refetch();
         refreshUnauthorizedCount.current = 0;
-        console.log("[AuthGuard] Refresh token exitoso");
       } catch (e) {
         if (isUnauthorizedError(e)) {
           refreshUnauthorizedCount.current += 1;
-          console.warn(
-            `[AuthGuard] Refresh no autorizado #${refreshUnauthorizedCount.current}, verificando sesion antes de cerrar`,
-          );
 
           const sessionCheck = await refetch().catch(() => null);
           if (sessionCheck?.data?.authenticated) {
-            console.warn(
-              "[AuthGuard] La sesion sigue activa; se evita logout por 401 aislado del refresh",
-            );
             return;
           }
-        } else {
+        } else if (import.meta.env.DEV) {
           console.error("[AuthGuard] Error en refresh token:", e);
         }
 
         if (!isBackendAvailable()) {
-          console.log(
-            "[AuthGuard] Error de refresh pero backend caido, no bloqueo sesion",
-          );
           return;
         }
 
@@ -125,13 +107,12 @@ export function useAuthGuard({ onLock, refreshSkewSeconds = 60 }: Options) {
         const nowManual2 =
           stateAfterError.locked && stateAfterError.lockReason === "manual";
         if (nowManual2) {
-          console.log("[AuthGuard] Lock manual activo, no bloqueo por refresh");
           return;
         }
 
         if (!isLocking.current) {
           isLocking.current = true;
-          await logout();
+          expireToken(isUnauthorizedError(e) ? "refresh_failed" : "expired");
           setTimeout(() => {
             isLocking.current = false;
           }, 1000);
@@ -152,6 +133,60 @@ export function useAuthGuard({ onLock, refreshSkewSeconds = 60 }: Options) {
     isManualLock,
     refreshAccessToken,
     logout,
+  ]);
+
+  useEffect(() => {
+    if (!authenticated || isManualLock) return;
+
+    const refreshIfNeeded = async () => {
+      if (!isBackendAvailable()) return;
+
+      const state = useAuth.getState();
+      if (!state.isAuthenticated || state.locked) return;
+
+      try {
+        await refreshAccessToken();
+        await refetch();
+        refreshUnauthorizedCount.current = 0;
+      } catch (error) {
+        if (isUnauthorizedError(error)) {
+          expireToken("refresh_failed");
+          return;
+        }
+
+        if (import.meta.env.DEV) {
+          console.error("[AuthGuard] Error en refresh preventivo:", error);
+        }
+      }
+    };
+
+    const onFocus = () => {
+      if (secondsLeft <= refreshSkewSeconds + 30) {
+        void refreshIfNeeded();
+      }
+    };
+
+    const onVisibility = () => {
+      if (!document.hidden) onFocus();
+    };
+
+    window.addEventListener("focus", onFocus);
+    window.addEventListener("online", refreshIfNeeded);
+    document.addEventListener("visibilitychange", onVisibility);
+
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      window.removeEventListener("online", refreshIfNeeded);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [
+    authenticated,
+    isManualLock,
+    secondsLeft,
+    refreshSkewSeconds,
+    refreshAccessToken,
+    refetch,
+    expireToken,
   ]);
 
   return { session, authenticated, secondsLeft, isLoading };

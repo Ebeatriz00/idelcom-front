@@ -62,7 +62,7 @@ export function useOperationsSettingsModal(
    * Genera el PDF de cierre/pausa con toda la información del proyecto.
    * Se ejecuta ANTES de que el SP libere al personal para capturar la foto completa.
    */
-  const generateClosurePdf = async (newStatusId: number) => {
+  const generateClosurePdf = async (newStatusId: number): Promise<File | void> => {
     if (!context?.selectedOrder || !detailData) return;
 
     try {
@@ -87,7 +87,7 @@ export function useOperationsSettingsModal(
         }
       }
 
-      await generateOperationClosurePdf({
+      return await generateOperationClosurePdf({
         selectedOrder: context.selectedOrder,
         opDetail: detailData,
         projectConfigs: context.projectConfigs || [],
@@ -114,14 +114,23 @@ export function useOperationsSettingsModal(
 
       const newStatusId = operationsData.operationsStatusId;
 
+      let closurePdfFile: File | undefined = undefined;
       if (RELEASE_STATUS_IDS.includes(newStatusId)) {
-        await generateClosurePdf(newStatusId);
+        const file = await generateClosurePdf(newStatusId);
+        if (file) {
+          closurePdfFile = file;
+        }
       }
 
-      const resp = await update({
+      const payload: any = {
         ...operationsData,
         operationsId: selectedId,
-      } as OperationsUpdateDto);
+      };
+      if (closurePdfFile) {
+        payload.closurePdfFile = closurePdfFile;
+      }
+
+      const resp = await update(payload as OperationsUpdateDto);
 
       if (resp.status === 1) {
         

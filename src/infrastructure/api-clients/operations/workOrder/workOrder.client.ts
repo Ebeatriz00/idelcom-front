@@ -2,6 +2,7 @@ import type {
   OperationsWorkOrderCreateDto,
   OperationsWorkOrderResponseDto,
   OperationsWorkOrderUpdateDto,
+  OperationsWorkOrderProgressReportResponseDto,
   Paginated,
 } from "@/application";
 import http from "@/infrastructure";
@@ -79,6 +80,18 @@ export async function deleteOperationsWorkOrder(
     "/OperationsWorkOrder/Delete",
     {
       params: { workOrderId },
+    }
+  );
+  return data;
+}
+
+export async function fetchOperationsWorkOrderProgressReport(
+  operationsId: number
+): Promise<OperationsWorkOrderProgressReportResponseDto> {
+  const { data } = await http.get<OperationsWorkOrderProgressReportResponseDto>(
+    "/OperationsWorkOrder/GetProgressReport",
+    {
+      params: { operationsId },
     }
   );
   return data;

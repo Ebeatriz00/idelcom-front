@@ -121,6 +121,7 @@ export * from "./dtos/operations/supervisor/supervisor.dto";
 export * from "./dtos/operations/support/support.dto";
 export * from "./dtos/operations/workdaystatus/workdaystatus.dto";
 export * from "./dtos/operations/workOrder/workOrder.dto";
+export * from "./dtos/operations/workOrder/workOrderProgressReport.dto";
 export * from "./dtos/operations/workOrderActivity/workOrderActivity.dto";
 export * from "./dtos/operations/workOrderProgress/workOrderProgress.dto";
 export * from "./dtos/operations/workOrderResponsible/workOrderResponsible.dto";

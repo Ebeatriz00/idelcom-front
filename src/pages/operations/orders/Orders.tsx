@@ -163,7 +163,7 @@ export default function Orders() {
                 onOpenSsomaProcess={(operationsId, opporDesc, dates, ssomaId) =>
                   ssomaProcessModal.openModal(operationsId, opporDesc, dates, ssomaId)
                 }
-                onOpenHistory={(operationsId) => workOrderProgressModal.openModal(operationsId)}
+                onOpenHistory={(operationsId, orderData) => workOrderProgressModal.openModal(operationsId, orderData)}
               />
 
               <div className="p-8 space-y-8">
@@ -310,6 +310,7 @@ export default function Orders() {
         open={workOrderProgressModal.open}
         onClose={workOrderProgressModal.closeModal}
         operationsId={workOrderProgressModal.operationsId}
+        selectedOrder={workOrderProgressModal.selectedOrder}
         activityId={workOrderProgressModal.activityId}
         targetQuantity={workOrderProgressModal.targetQuantity}
       />

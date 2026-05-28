@@ -2,7 +2,7 @@ import type {
   OperationsPersonnelAssignmentResponseDto,
   OperationsSquadResponseDto,
 } from "@/application";
-import { Users, Pencil, UserCog, X } from "lucide-react";
+import { Users, Pencil, UserCog, X, GripVertical } from "lucide-react";
 
 interface CrewCardProps {
   crew: OperationsSquadResponseDto;
@@ -16,7 +16,8 @@ export function CrewCard({ crew, members, onAddMember, onEdit, onDeleteMember }:
   return (
     <div className="flex flex-col bg-white rounded-lg border border-gray-200 shadow-sm w-full mb-3">
       <div className="p-2 border-b border-gray-100 flex items-center justify-between bg-slate-50/50 rounded-t-lg">
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-1 min-w-0">
+          <GripVertical className="size-4 text-slate-400 shrink-0 mr-0.5" />
           <h4 className="text-xs font-black text-slate-800 truncate" title={crew.squadName}>
             {crew.squadName}
           </h4>

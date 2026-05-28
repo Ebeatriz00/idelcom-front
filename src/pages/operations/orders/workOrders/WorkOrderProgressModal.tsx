@@ -1,6 +1,9 @@
 import { Modal } from "@/layouts";
-import { useOperationsWorkOrderProgressList, useWorkOrderActivitySelect } from "@/sharedKernel";
-import { Loader2, ClipboardCheck, Users, Image as ImageIcon, ChevronRight, ChevronLeft } from "lucide-react";
+import { useOperationsWorkOrderProgressList, useWorkOrderActivitySelect, showApiError } from "@/sharedKernel";
+import { fetchOperationsWorkOrderProgressReport } from "@/infrastructure";
+import { exportExcel } from "@/sharedKernel/utils/export/exportsGeneric";
+import type { ColumnSpec } from "@/sharedKernel";
+import { Loader2, ClipboardCheck, Users, Image as ImageIcon, ChevronRight, ChevronLeft, Download } from "lucide-react";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -17,6 +20,7 @@ interface Props {
   operationsId: number | null;
   activityId?: number | null;
   targetQuantity?: number | null;
+  selectedOrder?: any;
 }
 
 type ViewType = "dia" | "semana";
@@ -26,6 +30,7 @@ export function WorkOrderProgressModal({
   onClose,
   operationsId,
   activityId,
+  selectedOrder
 }: Props) {
   const [view, setView] = useState<ViewType>("dia");
   const [selectedDate, setSelectedDate] = useState<string>("");
@@ -171,6 +176,95 @@ export function WorkOrderProgressModal({
     };
   };
 
+  const handleExportExcel = async () => {
+    try {
+      const headerInfo = selectedOrder ? [
+        { label: "Cliente:", value: selectedOrder.clientsName || "No registrado" },
+        { label: "Proyecto:", value: selectedOrder.opporDesc || "No registrado" },
+        { label: "N° de Oportunidad:", value: selectedOrder.opporNum || "No registrado" },
+        { label: "Jefe de Proyecto:", value: selectedOrder.projectManager || "No registrado" }
+      ] : [];
+
+      // 1. OBTENER LA DATA CONSOLIDADA DEL NUEVO ENDPOINT
+      const reportData = await fetchOperationsWorkOrderProgressReport(operationsId || 0);
+      
+      const summaryData = reportData.summaries || [];
+      const detailsData = reportData.details || [];
+
+      // 2. CONFIGURAR LA TABLA DE RESUMEN DE OTs
+      const summaryTableColumns: ColumnSpec<any>[] = [
+        { label: "Responsable", value: r => r.responsibleName || "Sin asignar", width: 30 },
+        { label: "Orden de Trabajo (OT)", value: r => r.workOrderCode, width: 30 },
+        { label: "Porcentaje", value: r => `${r.progressPercentage}%`, width: 15 },
+      ];
+
+      // NUEVO: RESUMEN DE ACTIVIDADES
+      const activitySummaryMap = new Map<number, any>();
+      detailsData.forEach(item => {
+        if (!activitySummaryMap.has(item.activityId)) {
+          activitySummaryMap.set(item.activityId, {
+            activityName: item.activityName,
+            progressPercentage: item.activityProgressPercentage || 0,
+            targetQuantity: item.targetQuantity || 0,
+            currentQuantity: item.currentQuantity || 0,
+            measurementUnitSymbol: item.measurementUnitSymbol || ""
+          });
+        }
+      });
+      
+      const activitySummaryData = Array.from(activitySummaryMap.values());
+
+      const activitySummaryTableColumns: ColumnSpec<any>[] = [
+        { label: "Actividad", value: r => r.activityName || "Desconocida", width: 40 },
+        { label: "Unidad", value: r => r.measurementUnitSymbol, width: 15 },
+        { label: "Avance Total", value: r => r.currentQuantity, width: 15 },
+        { label: "Meta", value: r => r.targetQuantity, width: 15 },
+        { label: "Porcentaje Global", value: r => `${r.progressPercentage}%`, width: 20 },
+      ];
+
+      // 3. CONSTRUIR LA TABLA PRINCIPAL (Historial en crudo)
+      const rawColumns: ColumnSpec<any>[] = [
+        { label: "Fecha", value: r => r.reportedDate ? r.reportedDate.split("T")[0] : "", width: 15 },
+        { label: "Actividad", value: r => r.activityName || "Desconocida", width: 35 },
+        { label: "Unidad", value: r => r.measurementUnitSymbol || "", width: 10 },
+        { label: "Responsable", value: r => r.workerName || "Sin asignar", width: 30 },
+        { label: "Avance Reportado", value: r => r.reportedQuantity, width: 15 },
+        { label: "Observaciones", value: r => r.observations || "Sin observaciones", width: 40 },
+      ];
+
+      // Ordenar los detalles por fecha más reciente
+      const rawData = [...detailsData].sort((a, b) => {
+        const dateA = a.reportedDate || "";
+        const dateB = b.reportedDate || "";
+        return dateB.localeCompare(dateA);
+      });
+
+      await exportExcel(rawData, rawColumns, {
+        filePrefix: "Historial_Reportes",
+        title: "Historial de Reportes de Avance",
+        sheetName: "Historial",
+        headerInfo: headerInfo,
+        summaryTables: [
+          {
+            title: "Resumen de Órdenes de Trabajo",
+            columns: summaryTableColumns,
+            data: summaryData
+          },
+          {
+            title: "Resumen de Progreso de Actividades",
+            columns: activitySummaryTableColumns,
+            data: activitySummaryData
+          }
+        ]
+      });
+
+    } catch (error) {
+      console.error("Error al exportar Excel:", error);
+      showApiError(error);
+      alert("Hubo un error al intentar exportar el Excel. Revisa la consola o asegúrate de que el Backend está corriendo con los últimos cambios.");
+    }
+  };
+
   if (!open) return null;
 
   return (
@@ -193,7 +287,6 @@ export function WorkOrderProgressModal({
         }
       >
         <div className="flex h-[700px] bg-white overflow-hidden rounded-t-xl">
-          {/* Área de Contenido Principal */}
           <main className="flex-1 overflow-y-auto custom-scrollbar">
             <div className="p-8 space-y-8">
               <div className="flex flex-col gap-6">
@@ -248,6 +341,14 @@ export function WorkOrderProgressModal({
                     </div>
 
                     <div className="flex items-center justify-between md:justify-end gap-8 w-full md:w-auto">
+                      <button
+                          type="button"
+                          onClick={handleExportExcel}
+                          className="flex items-center gap-2 px-4 py-2.5 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-100 hover:text-emerald-700 transition-all shadow-sm active:scale-95"
+                        >
+                          <Download className="size-3.5" />
+                          Excel
+                        </button>
                       <div className="flex flex-col items-end">
                         <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Reportes</span>
                         <span className="text-xl font-black text-slate-900 leading-tight">{stats.count}</span>

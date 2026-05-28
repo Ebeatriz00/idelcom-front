@@ -5,4 +5,6 @@ export const qkWorkOrder = {
     [...qkWorkOrder.lists(), { page, pageSize, operationsId, search }] as const,
   details: () => [...qkWorkOrder.all, "detail"] as const,
   detail: (id: number) => [...qkWorkOrder.details(), id] as const,
+  progressReports: () => [...qkWorkOrder.all, "progressReport"] as const,
+  progressReport: (operationsId: number) => [...qkWorkOrder.progressReports(), operationsId] as const,
 };

@@ -61,7 +61,85 @@ export async function exportExcel<T>(
   titleCell.font = { size: 14, bold: true };
   titleCell.alignment = { vertical: "middle" };
 
-  // Encabezados
+  ws.addRow([]); // Espacio en blanco después del título
+
+  // Metadata / Cabecera (headerInfo)
+  if (opts.headerInfo && opts.headerInfo.length > 0) {
+    opts.headerInfo.forEach(info => {
+      const row = ws.addRow([info.label, info.value]);
+      row.getCell(1).font = { bold: true, color: { argb: "FF334155" } };
+      if (cols.length > 2) {
+        ws.mergeCells(row.number, 2, row.number, cols.length);
+      }
+    });
+    ws.addRow([]); // Espacio en blanco antes de la tabla
+  }
+
+  // Tablas de resumen adicionales (summaryTables)
+  if (opts.summaryTables && opts.summaryTables.length > 0) {
+    opts.summaryTables.forEach((st) => {
+      if (st.title) {
+        const tr = ws.addRow([st.title]);
+        tr.getCell(1).font = { bold: true, size: 12, color: { argb: "FF334155" } };
+        ws.mergeCells(tr.number, 1, tr.number, st.columns.length);
+      }
+      
+      const shr = ws.addRow(st.columns.map(c => c.label));
+      shr.font = { bold: true };
+      shr.eachCell((c, colNumber) => {
+         const colSpec = st.columns[colNumber - 1];
+         const fillColor = colSpec.headerStyle?.fillColor || "FFD8F3DC";
+         c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: fillColor } };
+         
+         if (colSpec.headerStyle?.textRotation) {
+           c.alignment = { ...c.alignment, textRotation: colSpec.headerStyle.textRotation as any, vertical: "middle", horizontal: "center" };
+         }
+         if (colSpec.headerStyle?.fontColor) {
+           c.font = { ...c.font, color: { argb: colSpec.headerStyle.fontColor } };
+         }
+         
+         c.border = { top: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" }, right: { style: "thin" } };
+      });
+      
+      st.data.forEach(row => {
+        const sdr = ws.addRow(st.columns.map(c => c.value(row)));
+        sdr.eachCell(c => {
+          c.border = { top: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" }, right: { style: "thin" } };
+        });
+      });
+      
+      st.columns.forEach((c, i) => {
+        if (c.isDataBar) {
+          const colLetter = ws.getColumn(i + 1).letter;
+          const startRow = shr.number + 1;
+          const endRow = shr.number + st.data.length;
+          if (startRow <= endRow) {
+            ws.addConditionalFormatting({
+              ref: `${colLetter}${startRow}:${colLetter}${endRow}`,
+              rules: [
+                {
+                  type: 'dataBar',
+                  cfvo: [{ type: 'num', value: 0 }, { type: 'num', value: 100 }],
+                  color: { argb: 'FF00B050' } // Verde brillante
+                } as any
+              ]
+            });
+          }
+        }
+      });
+      
+      st.columns.forEach((c, i) => {
+        const col = ws.getColumn(i + 1);
+        if (c.width && (!col.width || c.width > col.width)) {
+          col.width = c.width;
+        }
+      });
+
+      ws.addRow([]); // Espacio
+    });
+  }
+
+  // Encabezados de la tabla principal
   const headerRow = ws.addRow(cols.map((c) => c.label));
   headerRow.font = { bold: true };
   headerRow.alignment = { vertical: "middle" };
@@ -93,6 +171,12 @@ export async function exportExcel<T>(
       }
     });
   });
+
+  // Agregar Filtro Automático a la tabla (AutoFilter)
+  ws.autoFilter = {
+    from: { row: headerRow.number, column: 1 },
+    to: { row: headerRow.number + rowsMapped.length, column: cols.length }
+  };
 
   // Anchos de columnas
   cols.forEach((c, i) => {

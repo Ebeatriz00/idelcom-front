@@ -10,6 +10,10 @@ import {
   ChevronLeft,
   Pencil,
 } from "lucide-react";
+import { DragDropContext, DropResult } from "@hello-pangea/dnd";
+import { useQueryClient } from "@tanstack/react-query";
+import { useUpdateSquad } from "@/sharedKernel";
+import type { OperationsSquadResponseDto } from "@/application";
 
 type Props = {
   selectedOrder: OrdersResponseDto;
@@ -42,6 +46,44 @@ export function KanbanModal({
   onEditCrew,
   onDeleteMember,
 }: Props) {
+  const queryClient = useQueryClient();
+  const { mutateAsync: updateSquad } = useUpdateSquad();
+
+  const handleDragEnd = async (result: DropResult) => {
+    const { source, destination, draggableId } = result;
+
+    if (!destination) return;
+    if (source.droppableId === destination.droppableId) return;
+
+    const squadId = Number(draggableId);
+    const newWorkOrderId = Number(destination.droppableId);
+
+    let draggedSquad: OperationsSquadResponseDto | undefined;
+    const allSquadQueries = queryClient.getQueriesData({ queryKey: ["operations", "squad"] });
+    
+    for (const [key, data] of allSquadQueries) {
+      if (data && (data as any).items) {
+        const found = (data as any).items.find((s: any) => s.squadId === squadId);
+        if (found) {
+          draggedSquad = found;
+          break;
+        }
+      }
+    }
+
+    if (draggedSquad) {
+      await updateSquad({
+        squadId: draggedSquad.squadId,
+        workOrderId: newWorkOrderId,
+        squadName: draggedSquad.squadName,
+        techLeaderId: draggedSquad.techLeaderId,
+        description: draggedSquad.description,
+        operationsProjectConfigId: draggedSquad.operationsProjectConfigId,
+        squadCategory: draggedSquad.squadCategory,
+      });
+    }
+  };
+
   return (
     <Modal
       title={`Órdenes y Cuadrillas - ${selectedOrder?.opporDesc}`}
@@ -57,7 +99,8 @@ export function KanbanModal({
           emptyMessage="No hay registros de ejecución para esta operación"
         >
           <div className="flex flex-col h-full min-h-0">
-            <div className="flex gap-6 overflow-x-auto pb-4 flex-1 items-stretch snap-x min-h-0">
+            <DragDropContext onDragEnd={handleDragEnd}>
+              <div className="flex gap-6 overflow-x-auto pb-4 flex-1 items-stretch snap-x min-h-0">
               {filteredWorkOrders.map((wo) => (
                 <div key={wo.workOrderId} className="min-w-[400px] max-w-[400px] shrink-0 flex flex-col bg-white rounded-xl border border-gray-300 shadow-md overflow-hidden h-full snap-center">
                   <div className="p-5 border-b border-gray-100 bg-slate-50/50 shrink-0">
@@ -119,6 +162,7 @@ export function KanbanModal({
                 </div>
               )}
             </div>
+            </DragDropContext>
 
             {totalPagesWO > 1 && (
               <div className="flex items-center justify-end pt-4 mt-4 border-t border-gray-200 gap-4 shrink-0">

@@ -42,6 +42,7 @@ interface AdminSquadsManagerModalProps {
   workOrderIds: number[];
   onEditSquad: (squad: OperationsSquadResponseDto) => void;
   onAddMember: (squadId: number) => void;
+  readOnly?: boolean;
 }
 
 export function AdminSquadsManagerModal({
@@ -51,6 +52,7 @@ export function AdminSquadsManagerModal({
   workOrderIds,
   onEditSquad,
   onAddMember,
+  readOnly = false,
 }: AdminSquadsManagerModalProps) {
   const [activeTab, setActiveTab] = useState<"list" | "create">("list");
 
@@ -63,7 +65,7 @@ export function AdminSquadsManagerModal({
 
   return (
     <Modal
-      title="Gestión de Cuadrillas Administrativas"
+      title={readOnly ? "Ver Cuadrillas Administrativas" : "Gestión de Cuadrillas Administrativas"}
       onClose={onClose}
       size="md"
       footer={null}
@@ -81,17 +83,19 @@ export function AdminSquadsManagerModal({
           <List className="size-4" />
           Ver Cuadrillas
         </button>
-        <button
-          onClick={() => setActiveTab("create")}
-          className={`flex items-center gap-2 px-4 py-3 text-xs font-bold border-b-2 transition-colors ${
-            activeTab === "create"
-              ? "border-[#1A3673] text-[#1A3673]"
-              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-          }`}
-        >
-          <Plus className="size-4" />
-          Crear Nueva
-        </button>
+        {!readOnly && (
+          <button
+            onClick={() => setActiveTab("create")}
+            className={`flex items-center gap-2 px-4 py-3 text-xs font-bold border-b-2 transition-colors ${
+              activeTab === "create"
+                ? "border-[#1A3673] text-[#1A3673]"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+            }`}
+          >
+            <Plus className="size-4" />
+            Crear Nueva
+          </button>
+        )}
       </div>
 
       <div className="p-4 flex-1 overflow-y-auto">
@@ -100,6 +104,7 @@ export function AdminSquadsManagerModal({
             workOrderIds={workOrderIds}
             onEditSquad={onEditSquad}
             onAddMember={onAddMember}
+            readOnly={readOnly}
           />
         ) : (
           <CreateTab
@@ -118,10 +123,12 @@ function ListTab({
   workOrderIds,
   onEditSquad,
   onAddMember,
+  readOnly,
 }: {
   workOrderIds: number[];
   onEditSquad: (squad: OperationsSquadResponseDto) => void;
   onAddMember: (squadId: number) => void;
+  readOnly: boolean;
 }) {
   const { mutateAsync: deleteAssignment } = useDeleteAssignment();
 
@@ -169,6 +176,7 @@ function ListTab({
               onAddMember={() => onAddMember(squad.squadId)}
               onEdit={() => onEditSquad(squad)}
               onDeleteMember={handleDeleteMember}
+              readOnly={readOnly}
             />
           ))}
         </div>

@@ -10,7 +10,8 @@ import {
   ChevronLeft,
   Pencil,
 } from "lucide-react";
-import { DragDropContext, DropResult } from "@hello-pangea/dnd";
+import { DragDropContext } from "@hello-pangea/dnd";
+import type { DropResult } from "@hello-pangea/dnd";
 import { useQueryClient } from "@tanstack/react-query";
 import { useUpdateSquad } from "@/sharedKernel";
 import type { OperationsSquadResponseDto } from "@/application";
@@ -61,7 +62,7 @@ export function KanbanModal({
     let draggedSquad: OperationsSquadResponseDto | undefined;
     const allSquadQueries = queryClient.getQueriesData({ queryKey: ["operations", "squad"] });
     
-    for (const [key, data] of allSquadQueries) {
+    for (const [, data] of allSquadQueries) {
       if (data && (data as any).items) {
         const found = (data as any).items.find((s: any) => s.squadId === squadId);
         if (found) {

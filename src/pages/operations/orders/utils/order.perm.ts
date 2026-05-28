@@ -38,8 +38,8 @@ export function useOrdersPerms() {
     !isLoading && has("services_orders", "edit_general_project_adjustment");
   const canEditSsomaTeam =
     !isLoading && has("services_orders", "edit_ssoma_team");
-  const canEditProjectConfiguration =
-    !isLoading && has("services_orders", "edit_project_configuration");
+  const canEditAppConfiguration =
+    !isLoading && has("services_orders", "edit_app_configuration");
 
   return {
     isLoadingPerms: isLoading,
@@ -55,7 +55,7 @@ export function useOrdersPerms() {
     canConfigManagerSquadAdmin,
     canEditGeneralProjectAjustment,
     canEditSsomaTeam,
-    canEditProjectConfiguration,
+    canEditAppConfiguration,
     canViewFilteredWorkerOrders,
   };
 }

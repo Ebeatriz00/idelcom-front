@@ -37,9 +37,11 @@ export async function fetchAuthInvalidateBootstrap(
   if (profilesId == null) throw new Error("perfil no disponible.");
   if (businessId == null) throw new Error("Empresa no disponible.");
 
-  await http.post("/Auth/invalidate", {
-    profilesId: profilesId,
-    businessId,
+  await http.post("/Auth/invalidate", null, {
+    params: {
+      profilesId,
+      businessId,
+    },
   });
 }
 

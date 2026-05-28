@@ -39,6 +39,7 @@ import {
   ClipboardList,
   ArrowRight,
 } from "lucide-react";
+import { useOrdersPerms } from "./utils/order.perm";
 
 export default function Orders() {
   const [selectedOrder, setSelectedOrder] = useState<OrdersResponseDto | null>(() => {
@@ -52,6 +53,14 @@ export default function Orders() {
   const [searchWorkOrder] = useState("");
   const [activeShiftTab, setActiveShiftTab] = useState(0);
   const debouncedSearchWO = useDebouncedValue(searchWorkOrder, 400);
+  const {
+    canEditAppConfiguration,
+    canEditGeneralProjectAjustment,
+    canEditSsomaTeam,
+    canConfigManagerSquadAdmin,
+    canCreateOrdersWorker,
+  } =
+    useOrdersPerms();
 
   useEffect(() => {
     if (selectedOrder) {
@@ -164,6 +173,8 @@ export default function Orders() {
                   ssomaProcessModal.openModal(operationsId, opporDesc, dates, ssomaId)
                 }
                 onOpenHistory={(operationsId, orderData) => workOrderProgressModal.openModal(operationsId, orderData)}
+                canEditGeneralProjectAjustment={canEditGeneralProjectAjustment}
+                canEditSsomaTeam={canEditSsomaTeam}
               />
 
               <div className="p-8 space-y-8">
@@ -177,6 +188,7 @@ export default function Orders() {
                     setActiveShiftTab={setActiveShiftTab}
                     onOpenProjectConfig={(operationsId) => projectConfigModal.openModal(operationsId)}
                     operationsId={selectedOrder!.operationsId!}
+                    canEditAppConfiguration={canEditAppConfiguration}
                   />
                 </div>
 
@@ -190,19 +202,25 @@ export default function Orders() {
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <button
-                      onClick={() => workOrderModal.openModal(selectedOrder!.operationsId!)}
-                      className="flex items-center gap-1.5 px-4 py-3 bg-white border border-gray-200 text-slate-900 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm active:scale-95"
-                    >
-                      <ClipboardList className="size-3.5" />
-                      Nueva Orden
-                    </button>
+                    {canCreateOrdersWorker && (
+                      <button
+                        onClick={() => workOrderModal.openModal(selectedOrder!.operationsId!)}
+                        className="flex items-center gap-1.5 px-4 py-3 bg-white border border-gray-200 text-slate-900 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm active:scale-95"
+                      >
+                        <ClipboardList className="size-3.5" />
+                        Nueva Orden
+                      </button>
+                    )}
                     <button
                       onClick={() => setIsAdminManagerOpen(true)}
-                      className="flex items-center gap-1.5 px-4 py-3 bg-white border border-blue-200 text-blue-900 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-50 transition-all shadow-sm active:scale-95"
+                      className={`flex items-center gap-1.5 px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm active:scale-95 ${
+                        canConfigManagerSquadAdmin
+                          ? "bg-white border border-blue-200 text-blue-900 hover:bg-blue-50"
+                          : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-50"
+                      }`}
                     >
                       <Users className="size-3.5" />
-                      Cuadrillas Admin
+                      {canConfigManagerSquadAdmin ? "Gestionar Cuadrillas" : "Ver Cuadrillas"}
                     </button>
                     <button
                       onClick={() => setIsKanbanModalOpen(true)}
@@ -217,7 +235,7 @@ export default function Orders() {
               </div>
             </div>
           ) : (
-            <div className="flex h-full min-h-[600px] flex-col items-center justify-center rounded-xl border border-dashed border-gray-200 bg-white p-12 text-center shadow-inner">
+            <div className="flex h-full min-h-150 flex-col items-center justify-center rounded-xl border border-dashed border-gray-200 bg-white p-12 text-center shadow-inner">
               <div className="relative mb-8">
                 <div className="absolute inset-0 bg-blue-100 rounded-full blur-3xl opacity-30 animate-pulse" />
                 <div className="relative p-10 bg-slate-950 rounded-xl shadow-2xl text-white">
@@ -256,6 +274,7 @@ export default function Orders() {
         workOrderIds={allWorkOrderIds}
         onEditSquad={(squad) => squadModal.openModal(squad.workOrderId, squad)}
         onAddMember={(squadId) => personnelModal.openModal(squadId, true)}
+        readOnly={!canConfigManagerSquadAdmin}
       />
       <WorkOrderModal
         open={workOrderModal.open}
@@ -295,6 +314,7 @@ export default function Orders() {
         initialData={projectConfigModal.initialData}
         allConfigs={projectConfigModal.allConfigs}
         hasExistingConfig={projectConfigModal.hasExistingConfig}
+        readOnly={!canEditAppConfiguration}
       />
       <SsomaProcessRegisterModal
         open={ssomaProcessModal.open}
@@ -305,6 +325,7 @@ export default function Orders() {
         plannedDates={ssomaProcessModal.plannedDates}
         ssomaProcessId={ssomaProcessModal.ssomaProcessId}
         operationsId={selectedOrder?.operationsId || 0}
+        readOnly={!canEditSsomaTeam}
       />
       <WorkOrderProgressModal
         open={workOrderProgressModal.open}

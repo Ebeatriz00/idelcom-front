@@ -4,8 +4,8 @@ import { ProgressDonut } from "../_shared/ProgressDonut";
 import {
   ShieldCheck,
   Settings,
-  History as HistoryIcon,
   FileText,
+  TrendingUp,
 } from "lucide-react";
 
 type Props = {
@@ -17,6 +17,8 @@ type Props = {
   onOpenSettings: (operationsId: number) => void;
   onOpenSsomaProcess: (operationsId: number, opporDesc: string, dates: { start?: string | null; end?: string | null }, ssomaId?: number) => void;
   onOpenHistory: (operationsId: number, orderData: OrdersResponseDto) => void;
+  canEditGeneralProjectAjustment: boolean;
+  canEditSsomaTeam: boolean;
 };
 
 export function OrderHeader({
@@ -28,6 +30,8 @@ export function OrderHeader({
   onOpenSettings,
   onOpenSsomaProcess,
   onOpenHistory,
+  canEditGeneralProjectAjustment,
+  canEditSsomaTeam,
 }: Props) {
   return (
     <div className="p-8 pb-0">
@@ -86,21 +90,24 @@ export function OrderHeader({
                     {opDetail.operationStatusDesc}
                   </div>
                 )}
-                
+
                 <div className="relative flex items-center justify-center">
                   <ProgressDonut progress={opDetail?.progressPercentage ?? 0} size={70} strokeWidth={8} />
                 </div>
-                <button
-                  onClick={() => onOpenSettings(selectedOrder!.operationsId!)}
-                  className="p-2.5 text-slate-400 hover:text-[#1A3673] hover:bg-slate-50 rounded-xl transition-all hover:scale-105 active:scale-95 border border-transparent hover:border-slate-200 hover:shadow-sm"
-                  title="Configuración de Operaciones"
-                >
-                  <Settings className="size-6" />
-                </button>
+
+                {canEditGeneralProjectAjustment && (
+                  <button
+                    onClick={() => onOpenSettings(selectedOrder!.operationsId!)}
+                    className="p-2.5 text-slate-400 hover:text-[#1A3673] hover:bg-slate-50 rounded-xl transition-all hover:scale-105 active:scale-95 border border-transparent hover:border-slate-200 hover:shadow-sm"
+                    title="Configuración de Operaciones"
+                  >
+                    <Settings className="size-6" />
+                  </button>
+                )}
               </div>
             </div>
 
-            <div className="flex flex-col gap-3 min-w-[180px]">
+            <div className="flex flex-col gap-3 min-w-45">
               {opDetail?.requeredSsoma && (
                 <button
                   onClick={() => onOpenSsomaProcess(
@@ -109,10 +116,14 @@ export function OrderHeader({
                     { start: opDetail?.plannedStartDate, end: opDetail?.plannedEndDate },
                     existingSsomaId
                   )}
-                  className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-[#1A3673] text-[10px] font-black uppercase tracking-widest text-white hover:bg-[#132856] transition-all shadow-lg shadow-blue-900/10 active:scale-95"
+                  className={`w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 ${
+                    canEditSsomaTeam
+                      ? "bg-[#1A3673] text-white hover:bg-[#132856] shadow-lg shadow-blue-900/10"
+                      : "border border-blue-100/50 bg-white text-[#0A1B3D] hover:bg-slate-50"
+                  }`}
                 >
                   <ShieldCheck className="size-3.5" />
-                  Procesos SSOMA
+                  {canEditSsomaTeam ? "Asignar SSOMA" : "Ver SSOMA"}
                 </button>
               )}
 
@@ -129,11 +140,11 @@ export function OrderHeader({
               )}
 
               <button
-                onClick={() => onOpenHistory(selectedOrder!.operationsId!)}
+                onClick={() => onOpenHistory(selectedOrder!.operationsId!, selectedOrder)}
                 className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl border border-blue-100/50 bg-white text-[10px] font-black uppercase tracking-widest text-[#0A1B3D] hover:bg-slate-50 transition-all active:scale-95"
               >
-                <HistoryIcon className="size-3.5" />
-                Historial
+                <TrendingUp className="size-3.5" />
+                Avance Operativo
               </button>
             </div>
           </div>

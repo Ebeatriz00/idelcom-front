@@ -8,6 +8,7 @@ type Props = {
   setActiveShiftTab: (index: number) => void;
   onOpenProjectConfig: (operationsId: number) => void;
   operationsId: number;
+  canEditAppConfiguration: boolean;
 };
 
 export function ShiftConfigSection({
@@ -17,6 +18,7 @@ export function ShiftConfigSection({
   setActiveShiftTab,
   onOpenProjectConfig,
   operationsId,
+  canEditAppConfiguration,
 }: Props) {
   return (
     <div className="rounded-xl bg-slate-50/50 border border-gray-100 p-6">
@@ -44,10 +46,16 @@ export function ShiftConfigSection({
         <div className="flex-1" />
         <button
           onClick={() => onOpenProjectConfig(operationsId)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1A3673] text-[9px] font-black uppercase tracking-widest text-white hover:bg-[#132856] transition-all shadow-sm active:scale-95"
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all shadow-sm active:scale-95 ${
+            canEditAppConfiguration
+              ? "bg-[#1A3673] text-white hover:bg-[#132856]"
+              : "bg-white text-[#1A3673] border border-blue-100 hover:bg-slate-50"
+          }`}
         >
           <Settings className="size-3" />
-          {projectConfig ? "Actualizar" : "Configurar"}
+          {canEditAppConfiguration
+            ? projectConfig ? "Actualizar" : "Configurar"
+            : "Visualizar"}
         </button>
       </div>
 

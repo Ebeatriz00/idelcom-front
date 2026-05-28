@@ -43,6 +43,7 @@ interface Props {
   plannedDates: { start?: string | null; end?: string | null };
   ssomaProcessId?: number | null;
   operationsId: number;
+  readOnly?: boolean;
 }
 
 export function SsomaProcessRegisterModal({ 
@@ -53,7 +54,8 @@ export function SsomaProcessRegisterModal({
   workOrderName, 
   plannedDates,
   ssomaProcessId,
-  operationsId
+  operationsId,
+  readOnly = false
 }: Props) {
   const { register, handleSubmit, control, formState: { errors }, reset, watch, setValue } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -111,6 +113,8 @@ export function SsomaProcessRegisterModal({
   if (!open) return null;
 
   const handleFormSubmit = (data: FormData) => {
+    if (readOnly) return;
+
     const activeTeam = data.team.filter(member => member.isActive);
     onSubmit("", activeTeam);
     reset();
@@ -154,21 +158,23 @@ export function SsomaProcessRegisterModal({
   return (
     <Modal
       onClose={onClose}
-      title="Equipo SSOMA"
-      size="3xl" 
+      title={readOnly ? "Visualización SSOMA" : "Equipo SSOMA"}
+      size="3xl"
       footer={
         <div className="flex justify-end gap-3 w-full p-4 border-t bg-slate-50/50">
           <Button type="button" variant="outline" onClick={onClose} disabled={saving || deleting}>
-            Cancelar
+            {readOnly ? "Cerrar" : "Cancelar"}
           </Button>
-          <Button 
-            type="submit" 
-            form={formId} 
-            disabled={saving || loadingTeam || deleting} 
-            className="!bg-[#1A3673] hover:!bg-[#132856] text-white px-8 font-black uppercase tracking-widest text-[10px]"
-          >
-            {saving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Guardando...</> : "Guardar Equipo"}
-          </Button>
+          {!readOnly && (
+            <Button
+              type="submit"
+              form={formId}
+              disabled={saving || loadingTeam || deleting}
+              className="!bg-[#1A3673] hover:!bg-[#132856] text-white px-8 font-black uppercase tracking-widest text-[10px]"
+            >
+              {saving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Guardando...</> : "Guardar Equipo"}
+            </Button>
+          )}
         </div>
       }
     >
@@ -184,6 +190,7 @@ export function SsomaProcessRegisterModal({
             </h3>
             <p className="text-[8px] font-bold text-slate-400 uppercase mt-1 truncate">{workOrderName}</p>
           </div>
+          {!readOnly && (
           <button
             type="button"
             onClick={() => append({ 
@@ -199,6 +206,7 @@ export function SsomaProcessRegisterModal({
           >
             <Plus className="size-2.5" /> Añadir
           </button>
+          )}
         </div>
 
         <div className="max-h-[450px] overflow-y-auto overflow-x-hidden space-y-4 px-2 pr-1 custom-scrollbar pt-2">
@@ -253,7 +261,7 @@ export function SsomaProcessRegisterModal({
                                   placeholder={isActive ? "Especialista..." : "Personal anterior..."}
                                   useOptions={useWorkerOperationsOptions}
                                   value={selectedOption}
-                                  disabled={!isActive}
+                                  disabled={readOnly || !isActive}
                                   onChange={(opt) => {
                                     onChange(opt ? Number(opt.value) : 0);
                                     setValue(`team.${index}._workerName` as any, opt?.label || "");
@@ -271,6 +279,10 @@ export function SsomaProcessRegisterModal({
                                 <RotateCcw className="size-3" />
                                 Reemplazo Pendiente
                               </div>
+                            ) : readOnly ? (
+                              <div className="w-full h-[30px] bg-slate-50 border border-slate-200 text-slate-400 text-[8px] font-black uppercase rounded flex items-center justify-center gap-2 cursor-default">
+                                Puesto Libre
+                              </div>
                             ) : (
                               <button
                                 type="button"
@@ -287,7 +299,7 @@ export function SsomaProcessRegisterModal({
                             <div className="w-[110px] flex-shrink-0">
                               <select
                                 {...register(`team.${index}.ssomaRoleId` as const, { valueAsNumber: true })}
-                                disabled={!isActive}
+                                disabled={readOnly || !isActive}
                                 className="w-full text-[9px] font-bold p-1.5 border border-slate-200 rounded bg-slate-50/50 focus:bg-white outline-none h-[30px] cursor-pointer"
                               >
                                 <option value={0}>Rol...</option>
@@ -301,7 +313,7 @@ export function SsomaProcessRegisterModal({
                                   {...register(`team.${index}.operationsProjectConfigId` as const, { 
                                     setValueAs: (v) => (v === "" || v === "null" || v === null ? null : Number(v)) 
                                   })}
-                                  disabled={!isActive}
+                                  disabled={readOnly || !isActive}
                                   className="w-full text-[9px] font-bold p-1.5 border border-slate-200 rounded bg-white focus:bg-white outline-none h-[30px] cursor-pointer shadow-sm"
                                 >
                                   <option value="null">Turno...</option>
@@ -322,7 +334,7 @@ export function SsomaProcessRegisterModal({
                                   type="checkbox" 
                                   {...register(`team.${index}.isPrimary` as const)} 
                                   className="hidden" 
-                                  disabled={!isActive}
+                                  disabled={readOnly || !isActive}
                                 />
                                 <span className="text-[8px] font-black uppercase">Líder</span>
                               </label>
@@ -330,16 +342,18 @@ export function SsomaProcessRegisterModal({
                           </>
                         )}
 
-                        <div className="flex items-center gap-2 flex-shrink-0 border-l border-slate-100 pl-2 ml-1">
-                          <button 
-                            type="button"
-                            onClick={() => handleDeleteMember(index)} 
-                            disabled={deleting}
-                            className="size-6 flex items-center justify-center bg-red-50 text-red-600 border border-red-100 rounded shadow-sm hover:bg-red-600 hover:text-white transition-all disabled:opacity-50"
-                          >
-                            {deleting ? <Loader2 className="size-3 animate-spin" /> : <Trash2 className="size-3" />}
-                          </button>
-                        </div>
+                        {!readOnly && (
+                          <div className="flex items-center gap-2 flex-shrink-0 border-l border-slate-100 pl-2 ml-1">
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteMember(index)}
+                              disabled={deleting}
+                              className="size-6 flex items-center justify-center bg-red-50 text-red-600 border border-red-100 rounded shadow-sm hover:bg-red-600 hover:text-white transition-all disabled:opacity-50"
+                            >
+                              {deleting ? <Loader2 className="size-3 animate-spin" /> : <Trash2 className="size-3" />}
+                            </button>
+                          </div>
+                        )}
                       </div>
                       
                       {watch(`team.${index}._replacingWorkerName`) && (

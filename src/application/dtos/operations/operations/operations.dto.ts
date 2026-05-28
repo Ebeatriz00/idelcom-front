@@ -19,6 +19,7 @@ export interface OperationsResponseDto {
   progressPercentage?: number | null;
   status?: string | null;
   stateColor?: string | null;
+  closurePdfFileUid?: string | null;
 }
 
 export interface OperationsCreateDto {

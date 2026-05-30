@@ -1,3 +1,17 @@
+import type {
+  CreateProjectManager,
+  CreateQualitySupervisor,
+  RegisterSsoma,
+} from "@/application/dtos/operations/orders/orders.dto";
+import {
+  fetchOrdersList,
+  RegisterOrderProjectManager,
+  RegisterOrderQualitySupervisor,
+  RegisterOrderSsoma,
+} from "@/infrastructure/api-clients/operations/orders/orders.client";
+import { useOrdersPerms } from "@/pages/operations/orders/utils/order.perm";
+import { useAuth } from "@/stores/auth";
+import { selectWorkerId } from "@/stores/auth/selectors";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { qkOrders } from "./keys/qkOrders";
 import { fetchOrdersList, RegisterOrderProjectManager, RegisterOrderQualitySupervisor, RegisterOrderSsoma } from "@/infrastructure/api-clients/operations/orders/orders.client";
@@ -40,44 +54,43 @@ export function useRegisterOrderSsoma() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (payload: Omit<RegisterSsoma, 'businessId'>) => RegisterOrderSsoma(payload),
+    mutationFn: (payload: Omit<RegisterSsoma, "businessId">) =>
+      RegisterOrderSsoma(payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: qkOrders.all }); 
+      queryClient.invalidateQueries({ queryKey: qkOrders.all });
     },
     onError: (error) => {
       console.error("Error en la mutación de SSOMA:", error);
-    }
+    },
   });
 }
-
 
 export function useRegisterProjectManager() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (payload: Omit<CreateProjectManager, 'businessId'>) => 
+    mutationFn: (payload: Omit<CreateProjectManager, "businessId">) =>
       RegisterOrderProjectManager(payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: qkOrders.all }); 
+      queryClient.invalidateQueries({ queryKey: qkOrders.all });
     },
     onError: (error) => {
       console.error("Error en la mutación del Gerente de Proyecto:", error);
-    }
+    },
   });
 }
-
 
 export function useRegisterQualitySupervisor() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (payload: Omit<CreateQualitySupervisor, 'businessId'>) => 
+    mutationFn: (payload: Omit<CreateQualitySupervisor, "businessId">) =>
       RegisterOrderQualitySupervisor(payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: qkOrders.all }); 
+      queryClient.invalidateQueries({ queryKey: qkOrders.all });
     },
     onError: (error) => {
       console.error("Error en la mutación del Supervisor de Calidad:", error);
-    }
+    },
   });
 }

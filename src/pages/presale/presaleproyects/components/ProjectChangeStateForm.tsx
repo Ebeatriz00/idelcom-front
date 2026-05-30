@@ -8,7 +8,7 @@ import { RHFSearchSelect } from "./detail/modal/form/RHFSearchSelect";
 import type { ProjectsUpdateStatusDto } from "@/application/dtos/presale/PreSaleProyects.dto";
 import { useStatePreSaleOptions } from "@/sharedKernel/hooks/stpresale/useStatePreSale";
 
-import { uploadByArchiveType } from "@/sharedKernel";
+import { localFileUrl, uploadByArchiveType } from "@/sharedKernel";
 
 import { 
   useProjectObservationList,
@@ -302,7 +302,7 @@ export function ProjectChangeStateForm({
 
                return {
                  fileTitle: up.fileName,
-                 fileUrl: up.url,
+                 fileUrl: localFileUrl(up.relativePath),
                  relativePath: up.relativePath,
                  archiveType: dest 
                };

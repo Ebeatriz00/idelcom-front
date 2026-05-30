@@ -1,6 +1,7 @@
 import { isBackendAvailable, markBackendDown } from "@/interceptors/network.interceptor";
 import {
   ensureNotificationsStarted,
+  hasNotificationsConn,
   stopNotificationsConn,
 } from "@/realtime/notifications.connection";
 import { useAuth } from "@/stores/auth";
@@ -21,42 +22,36 @@ export function useSignalRConnection() {
     }
 
     if (!isAuthenticated) {
-      console.log("[WS] Deteniendo conexion SignalR");
-      stopNotificationsConn();
+      if (hasNotificationsConn()) {
+        stopNotificationsConn();
+      }
       connectionAttempts.current = 0;
       return;
     }
 
     if (!isBackendAvailable()) {
-      console.log("[WS] Backend no disponible, no intentar conexion");
       markBackendDown();
       return;
     }
 
-    console.log("[WS] Iniciando conexion SignalR...");
     connectionAttempts.current = 0;
 
     const attemptConnection = () => {
       if (connectionAttempts.current >= maxAttempts) {
-        console.warn("[WS] Maximos intentos de conexion alcanzados");
         markBackendDown();
         return;
       }
 
       connectionAttempts.current++;
 
-      ensureNotificationsStarted().catch((err) => {
-        const msg = String(err?.message || "");
+      ensureNotificationsStarted().catch((err: unknown) => {
+        const msg = String((err as { message?: string })?.message || "");
 
         if (
           msg.includes("Failed to fetch") ||
           msg.includes("ERR_CONNECTION_REFUSED") ||
           msg.includes("status code: 1006")
         ) {
-          console.log(
-            `[WS] Intento ${connectionAttempts.current}/${maxAttempts} fallido (backend caido)`,
-          );
-
           markBackendDown();
 
           if (connectionAttempts.current < maxAttempts) {
@@ -70,14 +65,17 @@ export function useSignalRConnection() {
           msg.toLowerCase().includes("unauthorized") ||
           msg.toLowerCase().includes("forbidden")
         ) {
-          console.warn("[WS] SignalR no autorizado, intentando refrescar sesion");
-          refreshAccessToken().catch(() => {
-            expireToken?.("signalr_auth_failed");
-          });
+          refreshAccessToken()
+            .then(() => ensureNotificationsStarted())
+            .catch(() => {
+              expireToken?.("signalr_auth_failed");
+            });
           return;
         }
 
-        console.error("[WS] Error inesperado en SignalR:", err);
+        if (import.meta.env.DEV) {
+          console.error("[WS] Error inesperado en SignalR:", err);
+        }
       });
     };
 

@@ -12,8 +12,10 @@ export function useMeasurementUnitOptions(
   return useQuery<PagedSelect<OptionItem>>({
     queryKey: ["operations", "measurementUnit", "select", page, s, pageSize],
     queryFn: () => fetchMeasurementUnitSelect(page, pageSize, s),
-    placeholderData: (prev) => prev,
+    placeholderData: undefined,
     enabled: opts?.enabled ?? true,
-    staleTime: 30_000,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
   });
 }

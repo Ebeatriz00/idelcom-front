@@ -10,6 +10,7 @@ export async function runCoordinatedAuthRefresh(baseURL?: string) {
       {
         baseURL: baseURL ?? (import.meta.env.VITE_API_URL as string),
         withCredentials: true,
+        timeout: 20000,
       },
     )
     .then(() => undefined)

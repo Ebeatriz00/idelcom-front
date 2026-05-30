@@ -4,7 +4,7 @@ import { runCoordinatedAuthRefresh } from "@/infrastructure/http/refresh-session
 import { getBusinessIdFromStorage, getUserIdFromtStorage } from "@/stores";
 
 export async function fetchAuthLogin(payload: any): Promise<any> {
-  const { data } = await http.post("/Auth/login", payload);
+  const { data } = await http.post("/Auth/login", payload, { timeout: 20000 });
   return data;
 }
 
@@ -37,9 +37,11 @@ export async function fetchAuthInvalidateBootstrap(
   if (profilesId == null) throw new Error("perfil no disponible.");
   if (businessId == null) throw new Error("Empresa no disponible.");
 
-  await http.post("/Auth/invalidate", {
-    profilesId: profilesId,
-    businessId,
+  await http.post("/Auth/invalidate", null, {
+    params: {
+      profilesId,
+      businessId,
+    },
   });
 }
 

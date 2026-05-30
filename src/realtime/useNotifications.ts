@@ -1,5 +1,4 @@
 import {
-  ensureNotificationsStarted,
   getNotificationsConn,
 } from "@/realtime/notifications.connection";
 import { useAuth } from "@/stores/auth";
@@ -87,10 +86,6 @@ export function useNotifications() {
 
     conn.off("notify", handler);
     conn.on("notify", handler);
-
-    ensureNotificationsStarted().catch((err) => {
-      console.debug("[WS] Inicio diferido omitido:", err);
-    });
 
     return () => conn.off("notify", handler);
   }, [isAuth, addNotification]);

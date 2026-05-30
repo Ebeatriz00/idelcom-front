@@ -26,8 +26,10 @@ export function useWorkOrderResponsibleList(
     queryKey: qkWorkOrderResponsible.list(pageIndex, pageSize, search),
     queryFn: () =>
       fetchOperationsWorkOrderResponsibleList(pageIndex, pageSize, search),
-    placeholderData: (prev) => prev,
-    staleTime: 60_000,
+    placeholderData: undefined,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
   });
 }
 
@@ -36,7 +38,10 @@ export function useWorkOrderResponsibleById(workOrderResponsibleId?: number) {
     queryKey: qkWorkOrderResponsible.detail(workOrderResponsibleId ?? 0),
     queryFn: () => fetchOperationsWorkOrderResponsibleById(workOrderResponsibleId!),
     enabled: !!workOrderResponsibleId,
-    staleTime: 60_000,
+    placeholderData: undefined,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
   });
 }
 

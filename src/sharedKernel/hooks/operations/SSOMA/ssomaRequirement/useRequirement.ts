@@ -31,8 +31,10 @@ export function useRequirementList(
   return useQuery({
     queryKey: qkRequirement.list(spodeId,page, pageSize, search),
     queryFn: () => fetchRequirementList(spodeId, page, pageSize, search),
-    placeholderData: (prev) => prev,
-    staleTime: 60_000,
+    placeholderData: undefined,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
   });
 }
 
@@ -43,10 +45,12 @@ export function useRequirementListItem(
   scopeId: number = 0,
 ) {
   return useQuery({
-    queryKey: qkRequirement.listItem(page, pageSize, search),
+    queryKey: qkRequirement.listItem(scopeId, page, pageSize, search),
     queryFn: () => fetchRequirementList(scopeId, page, pageSize, search),
-    placeholderData: (prev) => prev,
-    staleTime: 60_000,
+    placeholderData: undefined,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
   });
 }
 
@@ -61,9 +65,11 @@ export function useRequirementOptions(
   return useQuery<PagedSelect<OptionItem>>({
     queryKey: qkRequirement.select(scopedId, page, pageSize, s),
     queryFn: () => fetchRequirementSelect(scopedId, page, pageSize, s),
-    placeholderData: (prev) => prev,
+    placeholderData: undefined,
     enabled: opts?.enabled ?? true,
-    staleTime: 30_000,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
   });
 }
 
@@ -75,8 +81,10 @@ export function useRequirementSpecifications(
     queryKey: qkRequirement.specifications(requirementId ?? 0),
     queryFn: () => fetchRequirementSpecifications(requirementId ?? 0),
     enabled: opts?.enabled ?? !!requirementId,
-    staleTime: 60_000,
-    placeholderData: (prev) => prev,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
+    placeholderData: undefined,
     retry: false,
   });
 }
@@ -86,8 +94,10 @@ export function useRequirementById(id?: number) {
     queryKey: qkRequirement.byId(id ?? 0),
     queryFn: () => fetchRequirementById(id ?? 0),
     enabled: !!id,
-    staleTime: 60_000,
-    placeholderData: (prev) => prev,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
+    placeholderData: undefined,
     retry: false,
   });
 }
@@ -106,7 +116,7 @@ export function useRequirementMutations() {
       if (res.status === 1) {
         await showSuccess("Éxito", res.message);
         await queryClient.invalidateQueries({
-          queryKey: qkRequirement.lists(),
+          queryKey: qkRequirement.all,
         });
       } else {
         await showApiError(
@@ -124,18 +134,11 @@ export function useRequirementMutations() {
   const updateMut = useMutation<GlobalResponse, unknown, RequirementUpsertDto>({
     mutationFn: fetchUpdateRequirement,
     retry: false,
-    onSuccess: async (res, vars) => {
+    onSuccess: async (res) => {
       closeAlert();
       if (res.status === 1) {
         await showSuccess("Éxito", res.message);
-        await Promise.all([
-          queryClient.invalidateQueries({ queryKey: qkRequirement.lists() }),
-          vars.requirementId
-            ? queryClient.invalidateQueries({
-                queryKey: qkRequirement.byId(vars.requirementId),
-              })
-            : Promise.resolve(),
-        ]);
+        await queryClient.invalidateQueries({ queryKey: qkRequirement.all });
       } else {
         await showApiError(
           { response: { data: res } },
@@ -157,7 +160,7 @@ export function useRequirementMutations() {
       if (res.status === 1) {
         await showSuccess("Éxito", res.message);
         await queryClient.invalidateQueries({
-          queryKey: qkRequirement.lists(),
+          queryKey: qkRequirement.all,
         });
       } else {
         await showApiError(

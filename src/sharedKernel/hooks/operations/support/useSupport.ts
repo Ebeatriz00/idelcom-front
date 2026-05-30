@@ -25,8 +25,10 @@ export function useSupportList(
   return useQuery({
     queryKey: qkSupport.list(page, pageSize, search),
     queryFn: () => fetchSupportList(page, pageSize, search),
-    placeholderData: (prev) => prev,
-    staleTime: 60_000,
+    placeholderData: undefined,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
   });
 }
 
@@ -35,7 +37,10 @@ export function useSupportById(supportId?: number) {
     queryKey: qkSupport.detail(supportId ?? 0),
     queryFn: () => fetchSupportById(supportId!),
     enabled: !!supportId,
-    staleTime: 60_000,
+    placeholderData: undefined,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
   });
 }
 

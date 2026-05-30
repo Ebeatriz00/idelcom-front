@@ -24,9 +24,11 @@ export function useSsomaOperationsRequirementList(
   return useQuery<Paginated<SsomaOperationsRequirementItem>>({
     queryKey: qkSsomaOperationsRequirement.list(operationsId, page, pageSize, s),
     queryFn: () => fetchSsomaOperationsRequirementList(operationsId, page, pageSize, s),
-    placeholderData: (prev) => prev,
+    placeholderData: undefined,
     enabled: operationsId > 0,
-    staleTime: 60_000,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
   });
 }
 

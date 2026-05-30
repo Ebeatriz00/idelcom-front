@@ -52,6 +52,7 @@ export * from "./hooks/operations/ssomaOperationsRequirement/useSsomaOperationsR
 export * from "./hooks/operations/supervisor/useSupervisor";
 export * from "./hooks/operations/workdaystatus/useWorkDayStatus";
 export * from "./hooks/operations/workOrder/useWorkOrder";
+export * from "./hooks/operations/workOrder/useOperationsWorkOrderProgressReport";
 export * from "./hooks/operations/workOrderActivity/useWorkOrderActivity";
 export * from "./hooks/operations/workOrderActivity/workOrderActivity.qk";
 export * from "./hooks/operations/workOrderProgress/operationsWorkOrderProgress.qk";

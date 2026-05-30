@@ -86,7 +86,6 @@ export default function ProfilesPermissions() {
         ),
       });
 
-      console.log(selectedId, modulesPermissionsId);
       await fetchAuthInvalidateBootstrap(Number(selectedId));
       setOpenAssign(false);
     } catch (error) {

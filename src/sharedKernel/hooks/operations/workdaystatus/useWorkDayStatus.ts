@@ -13,7 +13,10 @@ export function useWorkDayStatusSelect(
   return useQuery({
     queryKey: qkWorkDayStatus.select(page, pageSize, search),
     queryFn: () => fetchWorkDayStatusSelect(page, pageSize, search),
-    staleTime: 5 * 60_000, 
+    placeholderData: undefined,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
   });
 }
 
@@ -22,6 +25,9 @@ export function useWorkDayStatusById(workdayStatusId?: number) {
     queryKey: qkWorkDayStatus.detail(workdayStatusId ?? 0),
     queryFn: () => fetchWorkDayStatusById(workdayStatusId!),
     enabled: !!workdayStatusId,
-    staleTime: 5 * 60_000,
+    placeholderData: undefined,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
   });
 }

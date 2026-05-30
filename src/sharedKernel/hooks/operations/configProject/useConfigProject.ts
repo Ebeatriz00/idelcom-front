@@ -33,7 +33,10 @@ export function useConfigProjectById(operationsId: number) {
       return data || [];
     },
     enabled: operationsId > 0,
-    staleTime: 60_000,
+    placeholderData: undefined,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
   });
 }
 

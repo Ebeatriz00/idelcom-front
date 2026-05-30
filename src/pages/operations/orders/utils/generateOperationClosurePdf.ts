@@ -135,7 +135,7 @@ function card(content: any[]): any {
 // =============================================
 // Función principal de generación del PDF
 // =============================================
-export async function generateOperationClosurePdf(data: OperationClosurePdfData): Promise<void> {
+export async function generateOperationClosurePdf(data: OperationClosurePdfData): Promise<File | void> {
   await ensurePdfVfs();
 
   const logoB64 = await loadLogoAsBase64();
@@ -692,7 +692,13 @@ export async function generateOperationClosurePdf(data: OperationClosurePdfData)
     },
   };
 
-  // Generar y descargar el PDF
+  // Retornar el PDF como File
   const fileName = `Acta_${newStatusName.replace(/\s+/g, "_")}_${selectedOrder.opporNum || "OP"}_${new Date().toISOString().slice(0, 10)}.pdf`;
-  (pdfMake as any).createPdf(docDef).download(fileName);
+
+  return new Promise((resolve) => {
+    (pdfMake as any).createPdf(docDef).getBlob((blob: Blob) => {
+      const file = new File([blob], fileName, { type: "application/pdf" });
+      resolve(file);
+    });
+  });
 }

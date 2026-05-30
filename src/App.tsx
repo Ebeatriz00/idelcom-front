@@ -9,6 +9,7 @@ import { Toaster } from "sonner";
 import "./assets/styles/index.css";
 import type { AuthSessionDto } from "./application";
 import http from "./infrastructure";
+import { fetchAuthRefresh } from "./infrastructure/api-clients/security/auth.client";
 import {
   markBackendDown,
   markBackendRecovered,
@@ -99,7 +100,7 @@ export default function App() {
         let { data } = await http.get<AuthSessionDto>("/Auth/session");
 
         if (!data?.authenticated && hasPersistedSessionHint()) {
-          await http.post("/Auth/refresh");
+          await fetchAuthRefresh();
           const refreshedSession = await http.get<AuthSessionDto>("/Auth/session");
           data = refreshedSession.data;
         }
@@ -109,7 +110,6 @@ export default function App() {
         } else {
           clearClientAuthState();
         }
-        console.log("[Bootstrap] Backend UP");
         markBackendRecovered();
         setBackendStatus("up");
       } catch (error: unknown) {
@@ -119,7 +119,6 @@ export default function App() {
           setBackendStatus("up");
           return;
         }
-        console.log("[Bootstrap] Backend DOWN");
         markBackendDown();
         setBackendStatus("down");
       }

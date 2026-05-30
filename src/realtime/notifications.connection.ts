@@ -8,23 +8,57 @@ let instance: signalR.HubConnection | null = null;
 let startPromise: Promise<void> | null = null;
 let manualStop = false;
 let authErrorCount = 0;
-const MAX_AUTH_ERRORS = 3;
 let handlersWired = false;
+let connectionEpoch = 0;
 
-async function recoverSignalRAuthFailure(context: string) {
+function isSignalRAuthError(message: string) {
+  const normalized = message.toLowerCase();
+  return (
+    message.includes("401") ||
+    normalized.includes("unauthorized") ||
+    normalized.includes("forbidden") ||
+    message.includes("Usuario No Autorizado")
+  );
+}
+
+async function recoverSignalRAuthFailure(context: string): Promise<boolean> {
   const state = useAuth.getState();
 
   if (!state.isAuthenticated || state.locked) {
-    return;
+    return false;
   }
 
   try {
     console.warn(`[WS] ${context}. Intentando refrescar sesion antes de expirar.`);
     await state.refreshAccessToken?.();
     authErrorCount = 0;
+    return true;
   } catch (error) {
-    console.error("[WS] No se pudo recuperar la sesion desde SignalR", error);
+    if (import.meta.env.DEV) {
+      console.error("[WS] No se pudo recuperar la sesion desde SignalR", error);
+    }
     state.expireToken?.("signalr_auth_failed");
+    return false;
+  }
+}
+
+async function refreshAndRestartSignalR(context: string): Promise<void> {
+  if (manualStop) return;
+
+  const recovered = await recoverSignalRAuthFailure(context);
+  if (!recovered || manualStop) return;
+
+  const authState = useAuth.getState();
+  if (!authState.isAuthenticated || authState.locked) return;
+
+  startPromise = null;
+
+  try {
+    await ensureNotificationsStarted();
+  } catch (error) {
+    if (import.meta.env.DEV) {
+      console.error("[WS] No se pudo reconectar SignalR despues del refresh", error);
+    }
   }
 }
 
@@ -54,7 +88,7 @@ function onNotify(payload: any) {
     keys.includes("dashboard")
       ? queryClient.invalidateQueries({ queryKey: ["dashboard"] })
       : Promise.resolve(),
-  ]).then(() => console.log("[WS] invalidacion completada"));
+  ]);
 }
 
 function wireHandlers(c: signalR.HubConnection) {
@@ -71,11 +105,11 @@ export function getNotificationsConn() {
       .withUrl(`${import.meta.env.VITE_API_URL}/hubs/notifications`, {
         withCredentials: true,
       })
+      .configureLogging(signalR.LogLevel.None)
       .withAutomaticReconnect({
         nextRetryDelayInMilliseconds: (retryContext) => {
           const retryCount = retryContext.previousRetryCount;
           if (retryCount > 2) {
-            console.log("[WS] Maximos reintentos alcanzados, deteniendo");
             return null;
           }
           return Math.min(retryCount * 1000, 5000);
@@ -87,23 +121,10 @@ export function getNotificationsConn() {
       if (manualStop) return;
 
       const msg = String(err?.message ?? "");
-      console.warn("[WS] Conexion cerrada:", msg.substring(0, 200));
 
-      const isAuthError =
-        msg.includes("401") ||
-        msg.includes("Unauthorized") ||
-        msg.includes("Usuario No Autorizado");
-
-      if (isAuthError) {
+      if (isSignalRAuthError(msg)) {
         authErrorCount++;
-        console.warn(`[WS] Error de auth #${authErrorCount}`);
-
-        if (authErrorCount >= MAX_AUTH_ERRORS) {
-          console.error("[WS] Maximos errores de auth alcanzados.");
-          void recoverSignalRAuthFailure(
-            "Maximos errores de auth en cierre de conexion",
-          );
-        }
+        void refreshAndRestartSignalR("SignalR cerro por auth");
         return;
       }
 
@@ -115,34 +136,28 @@ export function getNotificationsConn() {
         msg.includes("net::ERR_CONNECTION_REFUSED");
 
       if (isServerDown) {
-        console.warn("[WS] Backend caido (onclose), marcando backend-down");
         markBackendDown();
       }
     });
 
     instance.onreconnected(() => {
       authErrorCount = 0;
-      console.log("[WS] Reconectado - reset auth errors");
     });
   }
 
   return instance;
 }
 
-export function ensureNotificationsStarted() {
+export function ensureNotificationsStarted(): Promise<void> {
   const authState = useAuth.getState();
 
-  if (!authState.isAuthenticated || authState.locked) {
-    console.log("[WS] No iniciar conexion - usuario no autenticado/bloqueado");
+  if (manualStop || !authState.isAuthenticated || authState.locked) {
     return Promise.resolve();
   }
 
   const c = getNotificationsConn();
   wireHandlers(c);
-
-  console.log("[WS] state antes start:", c.state);
-
-  if (manualStop) return Promise.resolve();
+  const startEpoch = connectionEpoch;
 
   const state = c.state;
   if (
@@ -156,9 +171,19 @@ export function ensureNotificationsStarted() {
   if (!startPromise) {
     startPromise = c
       .start()
-      .then(() => {
+      .then(async () => {
+        const currentAuth = useAuth.getState();
+        if (
+          manualStop ||
+          startEpoch !== connectionEpoch ||
+          !currentAuth.isAuthenticated ||
+          currentAuth.locked
+        ) {
+          await c.stop().catch(() => undefined);
+          return;
+        }
+
         authErrorCount = 0;
-        console.log("[WS] Conectado");
       })
       .catch(async (err: any) => {
         const msg = String(err?.message ?? "");
@@ -167,17 +192,20 @@ export function ensureNotificationsStarted() {
           err?.name === "AbortError" ||
           msg.includes("The connection was stopped during negotiation")
         ) {
-          console.debug("[WS] Conexion abortada durante negociacion");
           return;
         }
 
-        if (msg.includes("401") || msg.includes("Unauthorized")) {
+        if (isSignalRAuthError(msg)) {
           authErrorCount++;
-          console.error("[WS] Error 401 en inicio - No autorizado");
 
-          if (authErrorCount >= MAX_AUTH_ERRORS) {
-            await recoverSignalRAuthFailure("SignalR devolvio 401 al iniciar");
+          const recovered = await recoverSignalRAuthFailure(
+            "SignalR devolvio 401 al iniciar",
+          );
+          if (recovered) {
+            startPromise = null;
+            return ensureNotificationsStarted();
           }
+
           throw err;
         }
 
@@ -186,12 +214,13 @@ export function ensureNotificationsStarted() {
           msg.includes("ERR_CONNECTION_REFUSED") ||
           msg.includes("status code: 1006")
         ) {
-          console.warn("[WS] Error de red en inicio - marcando backend down");
           markBackendDown();
           throw err;
         }
 
-        console.error("[WS] Error al iniciar conexion:", err);
+        if (import.meta.env.DEV) {
+          console.error("[WS] Error al iniciar conexion:", err);
+        }
         throw err;
       })
       .finally(() => {
@@ -202,21 +231,28 @@ export function ensureNotificationsStarted() {
   return startPromise;
 }
 
-export async function stopNotificationsConn() {
-  if (!instance) return;
+export function hasNotificationsConn() {
+  return !!instance || !!startPromise;
+}
 
+export async function stopNotificationsConn() {
   manualStop = true;
+  connectionEpoch++;
   authErrorCount = 0;
+  startPromise = null;
+
+  if (!instance) {
+    handlersWired = false;
+    return;
+  }
 
   try {
     if (instance.state !== signalR.HubConnectionState.Disconnected) {
       await instance.stop();
-      console.log("[WS] Conexion detenida manualmente");
     }
   } finally {
     instance = null;
     startPromise = null;
-    manualStop = false;
     handlersWired = false;
   }
 }
@@ -224,4 +260,5 @@ export async function stopNotificationsConn() {
 export function resetSignalRAuth() {
   authErrorCount = 0;
   manualStop = false;
+  connectionEpoch++;
 }

@@ -14,11 +14,6 @@ import { useAuth } from "@/stores/auth";
 import { selectWorkerId } from "@/stores/auth/selectors";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { qkOrders } from "./keys/qkOrders";
-import { fetchOrdersList, RegisterOrderProjectManager, RegisterOrderQualitySupervisor, RegisterOrderSsoma } from "@/infrastructure/api-clients/operations/orders/orders.client";
-import type { CreateProjectManager, CreateQualitySupervisor, RegisterSsoma } from "@/application/dtos/operations/orders/orders.dto";
-import { useOrdersPerms } from "@/pages/operations/orders/utils/order.perm";
-import { useAuth } from "@/stores/auth";
-import { selectWorkerId } from "@/stores/auth/selectors";
 
 export function useOrdersList(
     pageIndex: number,

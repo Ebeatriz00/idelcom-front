@@ -25,8 +25,10 @@ export function useSupervisorList(
   return useQuery({
     queryKey: qkSupervisor.list(page, pageSize, search),
     queryFn: () => fetchOperationsSupervisorList(page + 1, pageSize, search),
-    placeholderData: (prev) => prev,
-    staleTime: 60_000,
+    placeholderData: undefined,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
   });
 }
 
@@ -35,7 +37,10 @@ export function useSupervisorById(supervisorId?: number) {
     queryKey: qkSupervisor.detail(supervisorId ?? 0),
     queryFn: () => fetchOperationsSupervisorById(supervisorId!),
     enabled: !!supervisorId,
-    staleTime: 60_000,
+    placeholderData: undefined,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
   });
 }
 

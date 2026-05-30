@@ -5,8 +5,12 @@ export const qkRequirement = {
   list: (scopeId: number, page: number, pageSize: number, search: string) =>
     [...qkRequirement.lists(), scopeId, page, pageSize, search ?? ""] as const,
 
-  listItem: (page: number, pageSize: number, search: string) =>
-    [...qkRequirement.lists(), page, pageSize, search ?? ""] as const,
+  listItem: (
+    scopeId: number,
+    page: number,
+    pageSize: number,
+    search: string,
+  ) => [...qkRequirement.lists(), scopeId, page, pageSize, search ?? ""] as const,
 
   selects: () => [...qkRequirement.all, "select"] as const,
   select: (scopeId: number, page: number, pageSize: number, search: string) =>

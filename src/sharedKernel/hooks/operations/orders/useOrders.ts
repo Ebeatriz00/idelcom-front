@@ -14,36 +14,40 @@ import { useAuth } from "@/stores/auth";
 import { selectWorkerId } from "@/stores/auth/selectors";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { qkOrders } from "./keys/qkOrders";
+import { fetchOrdersList, RegisterOrderProjectManager, RegisterOrderQualitySupervisor, RegisterOrderSsoma } from "@/infrastructure/api-clients/operations/orders/orders.client";
+import type { CreateProjectManager, CreateQualitySupervisor, RegisterSsoma } from "@/application/dtos/operations/orders/orders.dto";
+import { useOrdersPerms } from "@/pages/operations/orders/utils/order.perm";
+import { useAuth } from "@/stores/auth";
+import { selectWorkerId } from "@/stores/auth/selectors";
 
 export function useOrdersList(
-  pageIndex: number,
-  pageSize: number,
-  search?: string,
-) {
-  const s = (search ?? "").trim();
-  const workerId = useAuth(selectWorkerId);
-  const { canViewAllOrders, canViewFilteredOrders, isLoadingPerms } =
-    useOrdersPerms();
-  const workerIdNumber =
-    workerId != null && workerId !== "" ? Number(workerId) : null;
-  const filteredWorkerId =
-    workerIdNumber != null && Number.isFinite(workerIdNumber)
-      ? workerIdNumber
-      : null;
-  const responsibleStaffId =
-    canViewFilteredOrders && filteredWorkerId != null ? filteredWorkerId : null;
-  const canFetchOrders =
-    !isLoadingPerms &&
-    (canViewAllOrders || (canViewFilteredOrders && responsibleStaffId != null));
+    pageIndex: number,
+    pageSize: number,
+    search?: string
+){
+    const s = (search ?? "").trim();
+    const workerId = useAuth(selectWorkerId);
+    const { canViewAllOrders, canViewFilteredOrders, isLoadingPerms } = useOrdersPerms();
+    const workerIdNumber = workerId != null && workerId !== "" ? Number(workerId) : null;
+    const filteredWorkerId =
+      workerIdNumber != null && Number.isFinite(workerIdNumber)
+        ? workerIdNumber
+        : null;
+    const responsibleStaffId =
+      canViewFilteredOrders && filteredWorkerId != null ? filteredWorkerId : null;
+    const canFetchOrders =
+      !isLoadingPerms &&
+      (canViewAllOrders || (canViewFilteredOrders && responsibleStaffId != null));
 
-  return useQuery({
-    queryKey: qkOrders.list(pageIndex, pageSize, s, responsibleStaffId),
-    queryFn: () =>
-      fetchOrdersList(s, responsibleStaffId, pageIndex + 1, pageSize),
-    staleTime: 60_000,
-    placeholderData: (prev) => prev,
-    enabled: canFetchOrders,
-  });
+    return useQuery({
+      queryKey: qkOrders.list(pageIndex, pageSize, s, responsibleStaffId),
+      queryFn: () => fetchOrdersList(s, responsibleStaffId, pageIndex + 1, pageSize),
+      staleTime: 0,
+      gcTime: 0,
+      refetchOnMount: "always",
+      placeholderData: undefined,
+      enabled: canFetchOrders
+    });
 }
 
 export function useRegisterOrderSsoma() {

@@ -12,8 +12,10 @@ export function useActivityComplexityOptions(
   return useQuery<PagedSelect<OptionItem>>({
     queryKey: ["operations", "activityComplexity", "select", page, s, pageSize],
     queryFn: () => fetchActivityComplexitySelect(page, pageSize, s),
-    placeholderData: (prev) => prev,
+    placeholderData: undefined,
     enabled: opts?.enabled ?? true,
-    staleTime: 30_000,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
   });
 }

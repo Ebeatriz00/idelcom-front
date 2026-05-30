@@ -34,8 +34,10 @@ export function useSsomaDocumentTypeList(
   return useQuery<Paginated<SsomaDocumentTypeResponseDto>>({
     queryKey: qkSsomaDocumentType.list(pageIndex, pageSize, s),
     queryFn: () => fetchSsomaDocumentTypesList(s, pageIndex + 1, pageSize),
-    placeholderData: (prev) => prev,
-    staleTime: 60_000,
+    placeholderData: undefined,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
   });
 }
 
@@ -49,9 +51,11 @@ export function useSsomaDocumentTypeOptions(
   return useQuery<PagedSelect<OptionItem>>({
     queryKey: qkSsomaDocumentType.select(page, s, pageSize),
     queryFn: () => fetchSsomaDocumentTypeSelect(page, s, pageSize),
-    placeholderData: (prev) => prev,
+    placeholderData: undefined,
     enabled: opts?.enabled ?? true,
-    staleTime: 30_000,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
   });
 }
 
@@ -60,9 +64,11 @@ export function useSsomaDocumentTypeById(id?: number | null) {
     queryKey:
       id != null ? qkSsomaDocumentType.byId(id ?? -1) : qkSsomaDocumentType.byId(-1),
     queryFn: () => fetchSsomaDocumentTypeById(id as number),
-    placeholderData: (prev) => prev,
+    placeholderData: undefined,
     enabled: id != null,
-    staleTime: 60_000,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
   });
 }
 
@@ -81,7 +87,7 @@ export function useSsomaDocumentTypeMutations() {
       if (res.status === 1) {
         await showSuccess("Éxito", res.message);
         await queryClient.invalidateQueries({
-          queryKey: qkSsomaDocumentType.lists(),
+          queryKey: qkSsomaDocumentType.all,
         });
       } else {
         await showApiError(
@@ -103,18 +109,13 @@ export function useSsomaDocumentTypeMutations() {
   >({
     mutationFn: fetchUpdateSsomaDocumentType,
     retry: false,
-    onSuccess: async (res, vars) => {
+    onSuccess: async (res) => {
       closeAlert();
       if (res.status === 1) {
         await showSuccess("Éxito", res.message);
         await Promise.all([
-          queryClient.invalidateQueries({ queryKey: qkSsomaDocumentType.lists() }),
+          queryClient.invalidateQueries({ queryKey: qkSsomaDocumentType.all }),
           queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
-          vars.ssomaDocumentTypeId
-            ? queryClient.invalidateQueries({
-                queryKey: qkSsomaDocumentType.byId(vars.ssomaDocumentTypeId),
-              })
-            : Promise.resolve(),
         ]);
       } else {
         await showApiError(
@@ -146,7 +147,7 @@ export function useSsomaDocumentTypeMutations() {
       closeAlert();
       if (res.status === 1) {
         await queryClient.invalidateQueries({
-          queryKey: qkSsomaDocumentType.lists(),
+          queryKey: qkSsomaDocumentType.all,
           type: "active",
         });
         await showSuccess("Éxito", res.message);

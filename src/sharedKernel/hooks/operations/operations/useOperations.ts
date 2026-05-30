@@ -25,8 +25,10 @@ export function useOperationsList(
   return useQuery({
     queryKey: qkOperations.list(page, pageSize),
     queryFn: () => fetchOperationsList(page + 1, pageSize),
-    placeholderData: (prev) => prev,
-    staleTime: 60_000,
+    placeholderData: undefined,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
   });
 }
 
@@ -35,7 +37,10 @@ export function useOperationsById(operationsId?: number) {
     queryKey: qkOperations.detail(operationsId ?? 0),
     queryFn: () => fetchOperationsById(operationsId!),
     enabled: !!operationsId,
-    staleTime: 60_000,
+    placeholderData: undefined,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
   });
 }
 

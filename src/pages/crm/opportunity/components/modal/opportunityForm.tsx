@@ -4,6 +4,7 @@ import type {
   OpportunitiesUpsertDto,
 } from "@/application";
 import {
+  localFileUrl,
   uploadByArchiveType,
   useBusinessLineOptions,
   useClientsOptions,
@@ -409,7 +410,7 @@ export function OpportunityForm({
 
               return {
                 fileTitle: up.fileName,
-                fileUrl: up.url,
+                fileUrl: localFileUrl(up.relativePath),
                 relativePath: up.relativePath,
                 archiveType: pendingFile.destination || "CONSULTORIA",
               };

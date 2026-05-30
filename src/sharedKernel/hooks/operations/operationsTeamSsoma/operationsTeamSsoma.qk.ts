@@ -5,4 +5,7 @@ export const qkOperationsTeamSsoma = {
     [...qkOperationsTeamSsoma.lists(), { ssomaProcessId }] as const,
   details: () => [...qkOperationsTeamSsoma.all, "detail"] as const,
   detail: (id: number) => [...qkOperationsTeamSsoma.details(), id] as const,
+  activeAssignments: () => [...qkOperationsTeamSsoma.all, "active-assignment"] as const,
+  activeAssignment: (workerId: number) =>
+    [...qkOperationsTeamSsoma.activeAssignments(), workerId] as const,
 };

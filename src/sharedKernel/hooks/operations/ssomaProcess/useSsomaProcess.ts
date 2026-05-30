@@ -24,6 +24,10 @@ export function useSsomaProcessList(
     queryFn: () =>
       fetchSsomaProcessList(page, pageSize, normalizedOperationsId, search),
     enabled,
+    placeholderData: undefined,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
   });
 }
 
@@ -35,6 +39,10 @@ export function useSsomaProcessById(
     queryKey: qkSsomaProcess.detail(ssomaProcessId ?? 0),
     queryFn: () => fetchSsomaProcessById(ssomaProcessId!, operationsId!),
     enabled: !!ssomaProcessId && !!operationsId,
+    placeholderData: undefined,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
   });
 }
 

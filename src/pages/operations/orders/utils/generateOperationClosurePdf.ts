@@ -694,7 +694,7 @@ export async function generateOperationClosurePdf(data: OperationClosurePdfData)
 
   // Retornar el PDF como File
   const fileName = `Acta_${newStatusName.replace(/\s+/g, "_")}_${selectedOrder.opporNum || "OP"}_${new Date().toISOString().slice(0, 10)}.pdf`;
-  
+
   return new Promise((resolve) => {
     (pdfMake as any).createPdf(docDef).getBlob((blob: Blob) => {
       const file = new File([blob], fileName, { type: "application/pdf" });

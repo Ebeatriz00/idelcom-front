@@ -83,31 +83,31 @@ export async function exportExcel<T>(
         tr.getCell(1).font = { bold: true, size: 12, color: { argb: "FF334155" } };
         ws.mergeCells(tr.number, 1, tr.number, st.columns.length);
       }
-      
+
       const shr = ws.addRow(st.columns.map(c => c.label));
       shr.font = { bold: true };
       shr.eachCell((c, colNumber) => {
          const colSpec = st.columns[colNumber - 1];
          const fillColor = colSpec.headerStyle?.fillColor || "FFD8F3DC";
          c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: fillColor } };
-         
+
          if (colSpec.headerStyle?.textRotation) {
            c.alignment = { ...c.alignment, textRotation: colSpec.headerStyle.textRotation as any, vertical: "middle", horizontal: "center" };
          }
          if (colSpec.headerStyle?.fontColor) {
            c.font = { ...c.font, color: { argb: colSpec.headerStyle.fontColor } };
          }
-         
+
          c.border = { top: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" }, right: { style: "thin" } };
       });
-      
+
       st.data.forEach(row => {
         const sdr = ws.addRow(st.columns.map(c => c.value(row)));
         sdr.eachCell(c => {
           c.border = { top: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" }, right: { style: "thin" } };
         });
       });
-      
+
       st.columns.forEach((c, i) => {
         if (c.isDataBar) {
           const colLetter = ws.getColumn(i + 1).letter;
@@ -127,7 +127,7 @@ export async function exportExcel<T>(
           }
         }
       });
-      
+
       st.columns.forEach((c, i) => {
         const col = ws.getColumn(i + 1);
         if (c.width && (!col.width || c.width > col.width)) {
@@ -155,7 +155,7 @@ export async function exportExcel<T>(
   // Datos
   rowsMapped.forEach((r) => {
     const excelRow = ws.addRow(cols.map((c) => c.value(r)));
-    
+
     // Aplicar Notas (Desplegables)
     cols.forEach((c, i) => {
       if (c.note) {

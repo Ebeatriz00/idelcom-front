@@ -11,6 +11,7 @@ export interface OperationsWorkOrderActivityResponseDto {
   targetQuantity: number;
   currentQuantity: number;
   progressPercentage: number;
+  parentActivityId?: number;
 }
 
 export interface OperationsWorkOrderActivityCreateDto {
@@ -19,6 +20,7 @@ export interface OperationsWorkOrderActivityCreateDto {
   measurementUnitId: number;
   complexityId: number;
   targetQuantity: number;
+  parentActivityId?: number;
 }
 
 export interface OperationsWorkOrderActivityUpdateDto {
@@ -28,6 +30,7 @@ export interface OperationsWorkOrderActivityUpdateDto {
   measurementUnitId: number;
   complexityId: number;
   targetQuantity: number;
+  parentActivityId?: number;
 }
 
 export interface OperationsWorkOrderActivitySelectItem {

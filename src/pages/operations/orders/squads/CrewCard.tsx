@@ -2,7 +2,7 @@ import type {
   OperationsPersonnelAssignmentResponseDto,
   OperationsSquadResponseDto,
 } from "@/application";
-import { GripVertical, Pencil, UserCog, Users, X } from "lucide-react";
+import { GripVertical, PencilLine, Trash2, UserCog, Users } from "lucide-react";
 
 interface CrewCardProps {
   crew: OperationsSquadResponseDto;
@@ -23,11 +23,11 @@ export function CrewCard({
 }: CrewCardProps) {
   return (
     <div className="flex flex-col bg-white rounded-lg border border-gray-200 shadow-sm w-full mb-3">
-      <div className="p-2 border-b border-gray-100 flex items-center justify-between bg-slate-50/50 rounded-t-lg">
-        <div className="flex items-center gap-1 min-w-0">
+      <div className="p-2 border-b border-gray-100 flex items-start justify-between gap-2 bg-slate-50/50 rounded-t-lg">
+        <div className="flex min-w-0 flex-1 items-start gap-1">
           <GripVertical className="size-4 text-slate-400 shrink-0 mr-0.5" />
           <h4
-            className="text-xs font-black text-slate-800 truncate"
+            className="text-xs font-black leading-tight text-slate-800 whitespace-normal break-words"
             title={crew.squadName}
           >
             {crew.squadName}
@@ -41,10 +41,12 @@ export function CrewCard({
           <div className="flex items-center gap-1 shrink-0 pl-2">
             <button
               onClick={() => onEdit(crew)}
-              className="p-1 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded transition-colors"
-              title="Editar Cuadrilla"
+              className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2 py-1 text-[8px] font-black uppercase tracking-widest text-slate-500 transition-colors hover:border-[#1A3673] hover:text-[#1A3673]"
+              title="Gestionar Cuadrilla"
+              aria-label="Gestionar Cuadrilla"
             >
-              <Pencil className="size-3" />
+              <PencilLine className="size-3" />
+              Gestionar
             </button>
           </div>
         )}
@@ -79,10 +81,10 @@ export function CrewCard({
                 {!readOnly && (
                   <button
                     onClick={() => onDeleteMember(member.assignmentId)}
-                    className="p-0.5 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded transition-colors opacity-0 group-hover:opacity-100"
+                    className="rounded p-0.5 text-rose-500 transition-colors hover:bg-rose-50 hover:text-rose-600"
                     title="Remover trabajador"
                   >
-                    <X className="size-2.5" />
+                    <Trash2 className="size-2.5" />
                   </button>
                 )}
               </div>

@@ -28,8 +28,10 @@ export function useSquadList(
     queryKey: qkSquad.list(page, pageSize, workOrderId ?? 0, search),
     queryFn: () =>
       fetchOperationsSquadList(page + 1, pageSize, workOrderId, search),
-    placeholderData: (prev) => prev,
-    staleTime: 60_000,
+    placeholderData: undefined,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
   });
 }
 
@@ -38,7 +40,10 @@ export function useSquadById(squadId?: number) {
     queryKey: qkSquad.detail(squadId ?? 0),
     queryFn: () => fetchOperationsSquadById(squadId!),
     enabled: !!squadId,
-    staleTime: 60_000,
+    placeholderData: undefined,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
   });
 }
 
@@ -65,7 +70,6 @@ export function useUpdateSquad() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (dto: OperationsSquadUpdateDto) => {
-      // Eliminamos showLoading para evitar el popup grande en el drag & drop
       return updateOperationsSquad(dto);
     },
     onSuccess: (resp) => {

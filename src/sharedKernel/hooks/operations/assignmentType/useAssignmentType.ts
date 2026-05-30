@@ -34,8 +34,10 @@ export function useAssignmentTypeList(
   return useQuery<Paginated<AssignmentTypeResponseDto>>({
     queryKey: qkAssignmentType.list(pageIndex, pageSize, s),
     queryFn: () => fetchAssignmentTypesList(s, pageIndex + 1, pageSize),
-    placeholderData: (prev) => prev,
-    staleTime: 60_000,
+    placeholderData: undefined,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
   });
 }
 
@@ -49,9 +51,11 @@ export function useAssignmentTypeOptions(
   return useQuery<PagedSelect<OptionItem>>({
     queryKey: qkAssignmentType.select(page, s, pageSize),
     queryFn: () => fetchAssignmentSelect(page, s, pageSize),
-    placeholderData: (prev) => prev,
+    placeholderData: undefined,
     enabled: opts?.enabled ?? true,
-    staleTime: 30_000,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
   });
 }
 
@@ -60,9 +64,11 @@ export function useAssignmentTypeById(id?: number | null) {
     queryKey:
       id != null ? qkAssignmentType.byId(id ?? -1) : qkAssignmentType.byId(-1),
     queryFn: () => fetchAssignmentTypeById(id as number),
-    placeholderData: (prev) => prev,
+    placeholderData: undefined,
     enabled: id != null,
-    staleTime: 60_000,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
   });
 }
 
@@ -81,7 +87,7 @@ export function useAssignmentTypeMutations() {
       if (res.status === 1) {
         await showSuccess("Éxito", res.message);
         await queryClient.invalidateQueries({
-          queryKey: qkAssignmentType.lists(),
+          queryKey: qkAssignmentType.all,
         });
       } else {
         await showApiError(
@@ -103,18 +109,13 @@ export function useAssignmentTypeMutations() {
   >({
     mutationFn: fetchUpdateAssignmentType,
     retry: false,
-    onSuccess: async (res, vars) => {
+    onSuccess: async (res) => {
       closeAlert();
       if (res.status === 1) {
         await showSuccess("Éxito", res.message);
         await Promise.all([
-          queryClient.invalidateQueries({ queryKey: qkAssignmentType.lists() }),
+          queryClient.invalidateQueries({ queryKey: qkAssignmentType.all }),
           queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
-          vars.ssomaAssignamentTypeId
-            ? queryClient.invalidateQueries({
-                queryKey: qkAssignmentType.byId(vars.ssomaAssignamentTypeId),
-              })
-            : Promise.resolve(),
         ]);
       } else {
         await showApiError(
@@ -146,7 +147,7 @@ export function useAssignmentTypeMutations() {
       closeAlert();
       if (res.status === 1) {
         await queryClient.invalidateQueries({
-          queryKey: qkAssignmentType.lists(),
+          queryKey: qkAssignmentType.all,
           type: "active",
         });
         await showSuccess("Éxito", res.message);

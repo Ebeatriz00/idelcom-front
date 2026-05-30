@@ -27,8 +27,10 @@ export function usePersonnelHomologationList(
     queryKey: qkPersonnelHomologation.list(page, pageSize, search),
     queryFn: () => fetchPersonnelHomologationList(page + 1, pageSize, search),
     retry: false,
-    placeholderData: (prev) => prev,
-    staleTime: 60_000,
+    placeholderData: undefined,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
   });
 }
 
@@ -39,8 +41,10 @@ export function useDetailPersonnelHomologation(personnelOperationsId?: number) {
       fetchDetailPersonnelOperations(personnelOperationsId as number),
     enabled:
       personnelOperationsId !== null && personnelOperationsId !== undefined,
-    placeholderData: (prev) => prev,
-    staleTime: 60_000,
+    placeholderData: undefined,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
     retry: false,
   });
 }
@@ -72,8 +76,10 @@ export function useByPersonnelHomologationList(
         search,
       ),
     retry: false,
-    placeholderData: (prev) => prev,
-    staleTime: 60_000,
+    placeholderData: undefined,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
     enabled,
   });
 }
@@ -92,9 +98,11 @@ export function useRequirementOptions(
       s,
     ),
     queryFn: () => fetchSelectOperationsForHomologation(page, pageSize, s),
-    placeholderData: (prev) => prev,
+    placeholderData: undefined,
     enabled: opts?.enabled ?? true,
-    staleTime: 30_000,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
   });
 }
 
@@ -110,10 +118,7 @@ export function useCreatePersonnelHomologation() {
       if (res.status === 1) {
         await showSuccess("Éxito", res.message);
         await qc.invalidateQueries({
-          queryKey: qkPersonnelHomologation.lists(),
-        });
-        await qc.invalidateQueries({
-          queryKey: qkPersonnelHomologation.details(),
+          queryKey: qkPersonnelHomologation.all,
         });
       } else {
         await showApiError(
@@ -144,10 +149,7 @@ export function useReplaceSsomaHomologationPersonnelDocument() {
       if (res.status === 1) {
         await showSuccess("Exito", res.message);
         await qc.invalidateQueries({
-          queryKey: qkPersonnelHomologation.lists(),
-        });
-        await qc.invalidateQueries({
-          queryKey: qkPersonnelHomologation.details(),
+          queryKey: qkPersonnelHomologation.all,
         });
       } else {
         await showApiError(

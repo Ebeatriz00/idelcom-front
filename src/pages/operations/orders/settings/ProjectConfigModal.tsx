@@ -2,7 +2,7 @@ import { Modal, Button } from "@/layouts";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Loader2, Clock, ShieldAlert, Briefcase, Plus } from "lucide-react";
+import { Loader2, Clock, ShieldAlert, Briefcase, Plus, AlertTriangle } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import type { OperationsProjectConfigResponseDto } from "@/application/dtos/operations/configProject/configProject.dto";
 
@@ -15,6 +15,8 @@ const schema = z.object({
   minutesTolerance: z.coerce.number().min(0, "Debe ser mayor o igual a 0"),
   beforeOfficialTime: z.string().min(1, "Hora anticipada requerida"),
   isRequirePhoto: z.boolean().default(false),
+  isRequireAppAttendance: z.boolean().default(false),
+  isRequireGroupPhoto: z.boolean().default(false),
   isRequireOvertime: z.boolean().default(false),
   isRequireOvertimeApproval: z.boolean().default(false),
 });
@@ -41,6 +43,8 @@ const defaultValues: FormValues = {
   minutesTolerance: 15,
   beforeOfficialTime: "07:30",
   isRequirePhoto: true,
+  isRequireAppAttendance: false,
+  isRequireGroupPhoto: false,
   isRequireOvertime: false,
   isRequireOvertimeApproval: false,
 };
@@ -115,6 +119,8 @@ export function ProjectConfigModal({
           minutesTolerance: config.minutesTolerance ?? (config as any).MinutesTolerance ?? 0,
           beforeOfficialTime: config.beforeOfficialTime?.substring(0, 5) || "07:30",
           isRequirePhoto: !!(config.isRequirePhoto ?? (config as any).IsRequirePhoto),
+          isRequireAppAttendance: !!(config.isRequireAppAttendance ?? (config as any).IsRequireAppAttendance),
+          isRequireGroupPhoto: !!(config.isRequireGroupPhoto ?? (config as any).IsRequireGroupPhoto),
           isRequireOvertime: !!(config.isRequireOvertime ?? (config as any).IsRequireOvertime),
           isRequireOvertimeApproval: !!(config.isRequireOvertimeApproval ?? (config as any).IsRequireOvertimeApproval),
         });
@@ -246,6 +252,13 @@ export function ProjectConfigModal({
             <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Controles Administrativos</h3>
           </div>
 
+          <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-amber-800">
+            <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-amber-500" />
+            <p className="text-[9px] font-bold leading-4">
+              La asistencia por app solo debe habilitarse en proyectos con máximo de 10 personas.
+            </p>
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <label className="flex items-center gap-3 p-3.5 rounded-xl bg-white border border-slate-200 shadow-sm cursor-pointer hover:bg-slate-50 transition-all group">
               <input type="checkbox" {...register("allowDelay")} disabled={readOnly} className="size-4 rounded accent-[#1A3673] disabled:cursor-default" />
@@ -256,7 +269,19 @@ export function ProjectConfigModal({
             <label className="flex items-center gap-3 p-3.5 rounded-xl bg-white border border-slate-200 shadow-sm cursor-pointer hover:bg-slate-50 transition-all group">
               <input type="checkbox" {...register("isRequirePhoto")} disabled={readOnly} className="size-4 rounded accent-[#1A3673] disabled:cursor-default" />
               <div className="flex flex-col">
-                <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest group-hover:text-slate-900">Obligar Foto</span>
+                <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest group-hover:text-slate-900">Obligar Foto Personal</span>
+              </div>
+            </label>
+            <label className="flex items-center gap-3 p-3.5 rounded-xl bg-white border border-slate-200 shadow-sm cursor-pointer hover:bg-slate-50 transition-all group">
+              <input type="checkbox" {...register("isRequireAppAttendance")} disabled={readOnly} className="size-4 rounded accent-[#1A3673] disabled:cursor-default" />
+              <div className="flex flex-col">
+                <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest group-hover:text-slate-900">Asistencia por App</span>
+              </div>
+            </label>
+            <label className="flex items-center gap-3 p-3.5 rounded-xl bg-white border border-slate-200 shadow-sm cursor-pointer hover:bg-slate-50 transition-all group">
+              <input type="checkbox" {...register("isRequireGroupPhoto")} disabled={readOnly} className="size-4 rounded accent-[#1A3673] disabled:cursor-default" />
+              <div className="flex flex-col">
+                <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest group-hover:text-slate-900">Foto Grupal</span>
               </div>
             </label>
           </div>

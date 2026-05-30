@@ -37,7 +37,10 @@ import { KanbanModal } from "./kanban/KanbanModal";
 import {
   Users,
   ClipboardList,
-  ArrowRight,
+  PanelLeftOpen,
+  ListOrdered,
+  LayoutDashboard,
+  ChevronDown,
 } from "lucide-react";
 import { useOrdersPerms } from "./utils/order.perm";
 
@@ -49,6 +52,13 @@ export default function Orders() {
   const [, setActiveWorkOrder] = useState<any | null>(null);
   const [isKanbanModalOpen, setIsKanbanModalOpen] = useState(false);
   const [isAdminManagerOpen, setIsAdminManagerOpen] = useState(false);
+  const [activeMobilePane, setActiveMobilePane] = useState<"orders" | "detail">(
+    selectedOrder ? "detail" : "orders",
+  );
+  const [isMobilePaneMode, setIsMobilePaneMode] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia("(max-width: 639px), (max-height: 500px) and (orientation: landscape)").matches;
+  });
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 9 });
   const [searchWorkOrder] = useState("");
   const [activeShiftTab, setActiveShiftTab] = useState(0);
@@ -59,16 +69,27 @@ export default function Orders() {
     canEditSsomaTeam,
     canConfigManagerSquadAdmin,
     canCreateOrdersWorker,
-  } =
-    useOrdersPerms();
+  } = useOrdersPerms();
 
   useEffect(() => {
     if (selectedOrder) {
       localStorage.setItem("lastSelectedOrder", JSON.stringify(selectedOrder));
+      setActiveMobilePane("detail");
     } else {
       localStorage.removeItem("lastSelectedOrder");
+      setActiveMobilePane("orders");
     }
   }, [selectedOrder]);
+
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 639px), (max-height: 500px) and (orientation: landscape)");
+    const updatePaneMode = () => setIsMobilePaneMode(query.matches);
+
+    updatePaneMode();
+    query.addEventListener("change", updatePaneMode);
+
+    return () => query.removeEventListener("change", updatePaneMode);
+  }, []);
 
   useEffect(() => {
     setPagination((p) => ({ ...p, pageIndex: 0 }));
@@ -144,7 +165,7 @@ export default function Orders() {
   const additionalOrdersModal = useAdditionalOrdersModal();
 
   return (
-    <div className="min-h-screen max-w-full flex flex-col relative p-6 space-y-6 bg-slate-50/30 overflow-x-hidden">
+    <div className="min-h-screen max-w-full flex flex-col relative overflow-x-hidden bg-[#f6f8fb] p-3 sm:p-4 lg:p-6 gap-4 lg:gap-6">
       <Breadcrumb
         items={[
           { label: "Operaciones", href: "#" },
@@ -152,19 +173,49 @@ export default function Orders() {
         ]}
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-[320px_1fr] lg:grid-cols-[380px_1fr] gap-6 flex-1 min-w-0">
-        <AsideOrders
-          selectedId={selectedOrder?.operationsId}
-          onSelect={(order) => setSelectedOrder(order)}
-        />
+      {selectedOrder && isMobilePaneMode && (
+        <div className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
+          <label className="mb-2 block text-[9px] font-black uppercase tracking-[0.22em] text-slate-400">
+            Vista
+          </label>
+          <div className="relative">
+            {activeMobilePane === "detail" ? (
+              <LayoutDashboard className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-blue-700" />
+            ) : (
+              <ListOrdered className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-blue-700" />
+            )}
+            <select
+              value={activeMobilePane}
+              onChange={(event) => setActiveMobilePane(event.target.value as "orders" | "detail")}
+              className="min-h-11 w-full appearance-none rounded-lg border border-slate-200 bg-slate-50 px-10 py-3 text-[11px] font-black uppercase tracking-widest text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/20"
+            >
+              <option value="detail">Detalle de orden</option>
+              <option value="orders">Lista de ordenes</option>
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+          </div>
+        </div>
+      )}
 
-        <main className="min-w-0 h-full">
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(300px,360px)_minmax(0,1fr)] gap-4 lg:gap-6 flex-1 min-w-0 items-start">
+        <div className={selectedOrder && isMobilePaneMode && activeMobilePane !== "orders" ? "hidden" : "block"}>
+          <AsideOrders
+            selectedId={selectedOrder?.operationsId}
+            onSelect={(order) => {
+              setSelectedOrder(order);
+              setActiveMobilePane("detail");
+            }}
+          />
+        </div>
+
+        <main className={selectedOrder && isMobilePaneMode && activeMobilePane !== "detail" ? "hidden min-w-0 h-full" : "min-w-0 h-full"}>
           {selectedOrder ? (
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-500">
+            <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-500">
 
               <OrderHeader
                 selectedOrder={selectedOrder}
                 opDetail={opDetail}
+                isMobilePaneMode={isMobilePaneMode}
                 hasAdditionals={!!hasAdditionals}
                 existingSsomaId={existingSsomaId}
                 onOpenAdditionals={(opporId) => additionalOrdersModal.openModal(opporId)}
@@ -177,8 +228,8 @@ export default function Orders() {
                 canEditSsomaTeam={canEditSsomaTeam}
               />
 
-              <div className="p-8 space-y-8">
-                <div className="grid grid-cols-1 xl:grid-cols-[1fr_1.8fr] gap-8">
+              <div className="p-4 sm:p-5 lg:p-6 xl:p-8 space-y-6 lg:space-y-8">
+                <div className="grid grid-cols-1 2xl:grid-cols-[minmax(280px,0.9fr)_minmax(0,1.6fr)] gap-4 lg:gap-6 xl:gap-8">
                   <ScheduleSection opDetail={opDetail} />
 
                   <ShiftConfigSection
@@ -192,39 +243,39 @@ export default function Orders() {
                   />
                 </div>
 
-                <div className="pt-8 border-t border-gray-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                  <div>
-                    <h3 className="text-lg font-black text-slate-900 tracking-tight uppercase leading-none">
-                      Gestión de Campo
+                <div className="pt-6 lg:pt-8 border-t border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                  <div className="min-w-0">
+                    <h3 className="text-base sm:text-lg font-black text-slate-900 tracking-tight uppercase leading-tight">
+                      Gestión Operativa de Cuadrillas
                     </h3>
                     <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">
-                      Órdenes de Trabajo y Cuadrillas
+                      Cuadrillas, actividades, subactividades y personal
                     </p>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="grid grid-cols-1 sm:flex sm:flex-wrap items-stretch sm:items-center gap-2 sm:gap-3 w-full lg:w-auto">
+                    <button
+                      onClick={() => setIsAdminManagerOpen(true)}
+                      className={`min-h-11 justify-center flex items-center gap-1.5 px-4 py-3 rounded-lg text-[10px] font-black uppercase tracking-widest focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-all shadow-sm active:scale-95 ${
+                        canConfigManagerSquadAdmin
+                          ? "bg-cyan-50 border border-cyan-200 text-cyan-900 hover:bg-cyan-100"
+                          : "bg-cyan-50/70 border border-cyan-100 text-cyan-800 hover:bg-cyan-50"
+                      }`}
+                    >
+                      <Users className="size-3.5" />
+                      Personal del Proyecto
+                    </button>
                     {canCreateOrdersWorker && (
                       <button
                         onClick={() => workOrderModal.openModal(selectedOrder!.operationsId!)}
-                        className="flex items-center gap-1.5 px-4 py-3 bg-white border border-gray-200 text-slate-900 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm active:scale-95"
+                        className="min-h-11 justify-center flex items-center gap-1.5 px-4 py-3 bg-white border border-slate-200 text-slate-900 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-all shadow-sm active:scale-95"
                       >
                         <ClipboardList className="size-3.5" />
                         Nueva Orden
                       </button>
                     )}
                     <button
-                      onClick={() => setIsAdminManagerOpen(true)}
-                      className={`flex items-center gap-1.5 px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm active:scale-95 ${
-                        canConfigManagerSquadAdmin
-                          ? "bg-white border border-blue-200 text-blue-900 hover:bg-blue-50"
-                          : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-50"
-                      }`}
-                    >
-                      <Users className="size-3.5" />
-                      {canConfigManagerSquadAdmin ? "Gestionar Cuadrillas" : "Ver Cuadrillas"}
-                    </button>
-                    <button
                       onClick={() => setIsKanbanModalOpen(true)}
-                      className="flex items-center gap-2 px-6 py-3 bg-[#1A3673] text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#132856] transition-all shadow-lg shadow-blue-900/10 active:scale-95"
+                      className="min-h-11 justify-center flex items-center gap-2 px-5 py-3 bg-[#1A3673] text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-[#132856] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 transition-all shadow-lg shadow-blue-900/10 active:scale-95"
                     >
                       <Users className="size-4" />
                       Ver Órdenes y Cuadrillas
@@ -235,16 +286,16 @@ export default function Orders() {
               </div>
             </div>
           ) : (
-            <div className="flex h-full min-h-150 flex-col items-center justify-center rounded-xl border border-dashed border-gray-200 bg-white p-12 text-center shadow-inner">
+            <div className="flex h-full min-h-[460px] lg:min-h-[620px] flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 bg-white p-6 sm:p-10 lg:p-12 text-center shadow-inner">
               <div className="relative mb-8">
                 <div className="absolute inset-0 bg-blue-100 rounded-full blur-3xl opacity-30 animate-pulse" />
-                <div className="relative p-10 bg-slate-950 rounded-xl shadow-2xl text-white">
-                  <ClipboardList className="size-20 opacity-80" />
+                <div className="relative p-7 sm:p-9 lg:p-10 bg-slate-950 rounded-lg shadow-2xl text-white">
+                  <ClipboardList className="size-14 sm:size-16 lg:size-20 opacity-80" />
                 </div>
               </div>
-              <h3 className="text-3xl font-black text-slate-900 tracking-tighter mb-4">Gestión de Operaciones</h3>
-              <p className="text-slate-400 max-w-sm mx-auto font-bold text-sm leading-relaxed uppercase tracking-wider">Selecciona un registro lateral para comenzar</p>
-              <div className="mt-8 flex items-center gap-2 text-blue-600 font-black text-[10px] uppercase tracking-[0.3em] animate-bounce"><ArrowRight className="size-4" />Esperando selección</div>
+              <h3 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mb-3 lg:mb-4">Gestión de Operaciones</h3>
+              <p className="text-slate-500 max-w-sm mx-auto font-bold text-xs sm:text-sm leading-relaxed uppercase tracking-wider">Selecciona una orden para revisar cronograma, responsables y cuadrillas.</p>
+              <div className="mt-6 lg:mt-8 flex items-center gap-2 text-blue-700 font-black text-[10px] uppercase tracking-[0.2em]"><PanelLeftOpen className="size-4" />Panel de ordenes</div>
             </div>
           )}
         </main>

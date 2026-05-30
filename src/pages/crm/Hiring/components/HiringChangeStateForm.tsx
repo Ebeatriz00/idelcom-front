@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { SearchSelect } from "@/layouts";
 import { useLicStatusOptions } from "@/sharedKernel/hooks/licstatus/useLicStatus";
-import { uploadByArchiveType } from "@/sharedKernel";
+import { localFileUrl, uploadByArchiveType } from "@/sharedKernel";
 
 import {
   OpporHiringFilesSection,
@@ -164,7 +164,7 @@ export function HiringChangeStateForm({
 
             return {
               fileTitle: up.fileName,
-              fileUrl: up.url,
+              fileUrl: localFileUrl(up.relativePath),
               relativePath: up.relativePath,
               archiveType: destination
             };

@@ -17,8 +17,8 @@ export const qkPersonnelHomologation = {
     search?: string,
   ) =>
     [
-      ...qkPersonnelHomologation.all,
-      "list-by-worker",
+      ...qkPersonnelHomologation.lists(),
+      "by-worker",
       operationsId,
       workerId,
       page,
@@ -33,8 +33,8 @@ export const qkPersonnelHomologation = {
     search?: string,
   ) =>
     [
-      ...qkPersonnelHomologation.all,
-      "select-operation-for-homologation",
+      ...qkPersonnelHomologation.selects(),
+      "operation-for-homologation",
       page,
       pageSize,
       search,

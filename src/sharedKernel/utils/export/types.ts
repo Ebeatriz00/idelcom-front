@@ -33,6 +33,14 @@ export type ColumnSpec<T> = {
   pdfWidth?: "auto" | "*" | number;
   /** (Opcional) Nota o información extra para mostrar en un desplegable (Excel) */
   note?: (row: T) => string | null | undefined;
+  /** (Opcional) Estilos avanzados para la cabecera (solo Excel) */
+  headerStyle?: {
+    fillColor?: string; // Hex sin #, ej "FF00FF00"
+    textRotation?: number | "vertical";
+    fontColor?: string; // Hex sin #, ej "FFFFFFFF"
+  };
+  /** (Opcional) Si es true, renderizará una barra de progreso condicional (0-100) en la columna (solo Excel) */
+  isDataBar?: boolean;
 };
 
 export type ExportOptions<T> = {
@@ -42,6 +50,14 @@ export type ExportOptions<T> = {
   title?: string;
   /** Nombre de hoja en Excel */
   sheetName?: string;
+  /** Información adicional como pares clave-valor para mostrar arriba de la tabla (solo Excel) */
+  headerInfo?: { label: string; value: string }[];
+  /** Tablas de resumen opcionales a mostrar arriba de la tabla principal (solo Excel) */
+  summaryTables?: {
+    title?: string;
+    columns: ColumnSpec<any>[];
+    data: any[];
+  }[];
   /** Nombre/razón social (para header/footer) */
   companyName?: string;
   /** Texto de marca de agua (PDF y “truco” Excel) */

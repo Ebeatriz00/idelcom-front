@@ -11,7 +11,10 @@ export function useOperationsStatusSelect(
   return useQuery({
     queryKey: qkOperationsStatus.select(page, pageSize, search),
     queryFn: () => fetchOperationsStatusSelect(page, pageSize, search),
-    staleTime: 5 * 60_000,
+    placeholderData: undefined,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
     ...options,
   });
 }

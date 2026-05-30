@@ -1,5 +1,10 @@
 import type { Paginated } from "@/application";
-import type { CreateProjectManager, CreateQualitySupervisor, OrdersResponseDto, RegisterSsoma } from "@/application/dtos/operations/orders/orders.dto";
+import type {
+  CreateProjectManager,
+  CreateQualitySupervisor,
+  OrdersResponseDto,
+  RegisterSsoma,
+} from "@/application/dtos/operations/orders/orders.dto";
 import http from "@/infrastructure/http/httpClient";
 import { getBusinessIdFromStorage } from "@/stores";
 
@@ -9,42 +14,44 @@ function unwrap<T>(payload: ApiEnvelope<T> | T): T {
 }
 
 export async function fetchOrdersList(
-    search: string,
-    page: number,
-    pageSize:number,
-): Promise<Paginated<OrdersResponseDto>>{
-    const bid = getBusinessIdFromStorage();
-    if (bid == null) throw new Error("BusinessId no disponible.");
+  search: string,
+  responsibleStaffId: number | null,
+  page: number,
+  pageSize: number,
+): Promise<Paginated<OrdersResponseDto>> {
+  const bid = getBusinessIdFromStorage();
+  if (bid == null) throw new Error("BusinessId no disponible.");
 
-    try {
-      const { data } = await http.get<
-        | ApiEnvelope<Paginated<OrdersResponseDto>>
-        | Paginated<OrdersResponseDto>
-      >("/Orders/OrdersList", { 
-        params: {
-          businessId: bid,
-          search,
-          page,
-          pageSize,
-        },
-       });
-       return unwrap<Paginated<OrdersResponseDto>>(data);
-    } catch (err: any){
-      if (err?.response?.status === 404) {
-        return {
-          items: [],
-          total: 0,
-          totalPages: 1,
-          page,
-          pageSize,
-        };
-       }
-       throw err;
-     }
+  try {
+    const { data } = await http.get<
+      ApiEnvelope<Paginated<OrdersResponseDto>> | Paginated<OrdersResponseDto>
+    >("/Orders/OrdersList", {
+      params: {
+        businessId: bid,
+        search,
+        responsibleStaff: responsibleStaffId,
+        page,
+        pageSize,
+      },
+    });
+    return unwrap<Paginated<OrdersResponseDto>>(data);
+  } catch (err: any) {
+    if (err?.response?.status === 404) {
+      return {
+        items: [],
+        total: 0,
+        totalPages: 1,
+        page,
+        pageSize,
+      };
+    }
+    throw err;
+  }
 }
 
-
-export async function RegisterOrderSsoma(payload: Omit<RegisterSsoma, 'businessId'>): Promise<boolean> {
+export async function RegisterOrderSsoma(
+  payload: Omit<RegisterSsoma, "businessId">,
+): Promise<boolean> {
   const bid = getBusinessIdFromStorage();
   if (bid == null) throw new Error("BusinessId no disponible.");
 
@@ -56,16 +63,17 @@ export async function RegisterOrderSsoma(payload: Omit<RegisterSsoma, 'businessI
   try {
     const { data } = await http.put<any>("/Orders/RegisterSsoma", finalPayload);
     const status = data?.Status ?? data?.status;
-    
-    return status === 1;
 
+    return status === 1;
   } catch (err: any) {
     console.error("Error al actualizar SSOMA:", err);
     throw err;
   }
 }
 
-export async function RegisterOrderProjectManager(payload: Omit<CreateProjectManager, 'businessId'>): Promise<boolean> {
+export async function RegisterOrderProjectManager(
+  payload: Omit<CreateProjectManager, "businessId">,
+): Promise<boolean> {
   const bid = getBusinessIdFromStorage();
   if (bid == null) throw new Error("BusinessId no disponible.");
 
@@ -75,19 +83,22 @@ export async function RegisterOrderProjectManager(payload: Omit<CreateProjectMan
   };
 
   try {
-    const { data } = await http.put<any>("/Orders/RegisterProjectManager", finalPayload);
+    const { data } = await http.put<any>(
+      "/Orders/RegisterProjectManager",
+      finalPayload,
+    );
     const status = data?.Status ?? data?.status;
-    
-    return status === 1;
 
+    return status === 1;
   } catch (err: any) {
     console.error("Error al actualizar el Gerente de Proyecto:", err);
     throw err;
   }
 }
 
-
-export async function RegisterOrderQualitySupervisor(payload: Omit<CreateQualitySupervisor, 'businessId'>): Promise<boolean> {
+export async function RegisterOrderQualitySupervisor(
+  payload: Omit<CreateQualitySupervisor, "businessId">,
+): Promise<boolean> {
   const bid = getBusinessIdFromStorage();
   if (bid == null) throw new Error("BusinessId no disponible.");
 
@@ -97,14 +108,15 @@ export async function RegisterOrderQualitySupervisor(payload: Omit<CreateQuality
   };
 
   try {
-    const { data } = await http.put<any>("/Orders/RegisterQualitySupervisor", finalPayload);
+    const { data } = await http.put<any>(
+      "/Orders/RegisterQualitySupervisor",
+      finalPayload,
+    );
     const status = data?.Status ?? data?.status;
-    
-    return status === 1;
 
+    return status === 1;
   } catch (err: any) {
     console.error("Error al actualizar el Supervisor de Calidad:", err);
     throw err;
   }
 }
-

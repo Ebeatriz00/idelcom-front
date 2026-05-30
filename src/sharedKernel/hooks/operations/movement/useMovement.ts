@@ -19,8 +19,10 @@ export function useMovementList(
   return useQuery({
     queryKey: qkMovement.list(page, pageSize, search),
     queryFn: () => fetchOperationPersonnelMovementList(page + 1, pageSize, search),
-    placeholderData: (prev) => prev,
-    staleTime: 60_000,
+    placeholderData: undefined,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
   });
 }
 

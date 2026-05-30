@@ -27,8 +27,10 @@ export function useWorkOrderActivitySelect(
     queryKey: qkWorkOrderActivity.select(operationsId, page, pageSize, search),
     queryFn: () =>
       fetchOperationsWorkOrderActivitySelect(operationsId, page, pageSize, search),
-    placeholderData: (prev) => prev,
-    staleTime: 60_000,
+    placeholderData: undefined,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
     enabled: !!operationsId,
   });
 }
@@ -43,8 +45,10 @@ export function useWorkOrderActivityList(
     queryKey: qkWorkOrderActivity.list(workOrderId, page, pageSize, search),
     queryFn: () =>
       fetchOperationsWorkOrderActivityList(workOrderId, page + 1, pageSize, search),
-    placeholderData: (prev) => prev,
-    staleTime: 60_000,
+    placeholderData: undefined,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
     enabled: !!workOrderId,
   });
 }
@@ -58,7 +62,7 @@ export function useCreateWorkOrderActivity() {
     },
     onSuccess: (resp) => {
       if (resp.status === 1) {
-        queryClient.invalidateQueries({ queryKey: qkWorkOrderActivity.lists() });
+        queryClient.invalidateQueries({ queryKey: qkWorkOrderActivity.all });
         showSuccess(resp.message || "Actividad creada correctamente");
       } else {
         showApiError(resp.message);
@@ -77,7 +81,7 @@ export function useUpdateWorkOrderActivity() {
     },
     onSuccess: (resp) => {
       if (resp.status === 1) {
-        queryClient.invalidateQueries({ queryKey: qkWorkOrderActivity.lists() });
+        queryClient.invalidateQueries({ queryKey: qkWorkOrderActivity.all });
         showSuccess(resp.message || "Actividad actualizada correctamente");
       } else {
         showApiError(resp.message);
@@ -96,7 +100,7 @@ export function useDeleteWorkOrderActivity() {
     },
     onSuccess: (resp) => {
       if (resp.status === 1) {
-        queryClient.invalidateQueries({ queryKey: qkWorkOrderActivity.lists() });
+        queryClient.invalidateQueries({ queryKey: qkWorkOrderActivity.all });
         showSuccess(resp.message || "Actividad eliminada correctamente");
       } else {
         showApiError(resp.message);

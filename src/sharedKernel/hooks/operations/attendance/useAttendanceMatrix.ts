@@ -16,7 +16,9 @@ export function useAttendanceMatrix(params: {
   return useQuery({
     queryKey: qkAttendance.matrix(params),
     queryFn: () => fetchAttendanceMatrix(params),
-    placeholderData: (prev) => prev,
-    staleTime: 60_000,
+    placeholderData: undefined,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
   });
 }

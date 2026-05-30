@@ -23,6 +23,10 @@ export function useOperationsTeamSsomaListByProcessId(ssomaProcessId: number) {
     queryKey: qkOperationsTeamSsoma.list(ssomaProcessId),
     queryFn: () => fetchOperationsTeamSsomaListByProcessId(ssomaProcessId),
     enabled: !!ssomaProcessId,
+    placeholderData: undefined,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
   });
 }
 
@@ -31,14 +35,22 @@ export function useOperationsTeamSsomaById(operationsTeamSsomaId: number) {
     queryKey: qkOperationsTeamSsoma.detail(operationsTeamSsomaId),
     queryFn: () => fetchOperationsTeamSsomaById(operationsTeamSsomaId),
     enabled: !!operationsTeamSsomaId,
+    placeholderData: undefined,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
   });
 }
 
 export function useActiveSsomaAssignmentByWorkerId(workerId: number) {
   return useQuery({
-    queryKey: ["active-ssoma-assignment", workerId],
+    queryKey: qkOperationsTeamSsoma.activeAssignment(workerId),
     queryFn: () => fetchActiveSsomaAssignmentByWorkerId(workerId),
     enabled: !!workerId,
+    placeholderData: undefined,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
   });
 }
 
@@ -50,7 +62,7 @@ export function useCreateOperationsTeamSsoma() {
     },
     onSuccess: async (res) => {
       if (res.status === 1) {
-        queryClient.invalidateQueries({ queryKey: qkOperationsTeamSsoma.lists() });
+        queryClient.invalidateQueries({ queryKey: qkOperationsTeamSsoma.all });
         await showSuccess("Éxito", "Se agregó correctamente al equipo SSOMA.");
       } else {
         await showApiError(res.message);

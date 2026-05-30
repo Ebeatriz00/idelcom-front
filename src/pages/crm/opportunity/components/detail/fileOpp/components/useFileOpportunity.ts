@@ -8,6 +8,7 @@ import {
   deleteLocalFile,
   MAX_SIZE_MB,
   showWarning,
+  localFileUrl,
   toRelativePathFromPublic,
   uploadByArchiveType,
   useFTOpportunitiesMutations,
@@ -134,7 +135,7 @@ export function useFileOpportunity({
           const payload: FileTrackingOpporCreateDto = {
             opporToken,
             fileTitle: up.fileName,
-            fileUrl: up.url,
+            fileUrl: localFileUrl(up.relativePath),
             relativePath: up.relativePath,
             comment: comment || "",
             archiveType: folderKey,

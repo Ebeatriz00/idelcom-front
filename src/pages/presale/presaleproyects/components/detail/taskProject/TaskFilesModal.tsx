@@ -7,6 +7,7 @@ import {
   type PendingHiringFile 
 } from "@/pages/crm/opportunity/components/modal/deliverablesHiring/opporHiringFilesSection";
 import { 
+  localFileUrl,
   uploadByArchiveType, 
   showApiError, 
   useFTOpportunitiesMutations, 
@@ -129,7 +130,7 @@ export function TaskFilesModal({ open, onClose, task, opporNumber, projectData, 
         const payload = {
           opporToken: projectData?.linkToken, 
           fileTitle: up.fileName,
-          fileUrl: up.url,
+          fileUrl: localFileUrl(up.relativePath),
           relativePath: up.relativePath,
           comment: `Entregable de la tarea: ${task?.titleTasks || ""}`,
           archiveType: dest,

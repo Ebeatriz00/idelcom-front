@@ -2,7 +2,18 @@ import { Modal, Button } from "@/layouts";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Loader2, UserCheck, Briefcase, LayoutGrid, CalendarDays, Settings2, ChevronLeft, ChevronRight, ListChecks } from "lucide-react";
+import {
+  Loader2,
+  UserCheck,
+  Briefcase,
+  LayoutGrid,
+  CalendarDays,
+  Settings2,
+  ChevronLeft,
+  ChevronRight,
+  ListChecks,
+  ShieldCheck,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { OptionItem, OperationsResponseDto } from "@/application";
 import { SearchSelect } from "@/layouts/components/ui/search-select/searchSelect";
@@ -47,6 +58,61 @@ const defaultValues: FormValues = {
 
 const PAGE_SIZE = 8;
 
+function SectionHeader({
+  icon,
+  title,
+  description,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  description?: string;
+}) {
+  return (
+    <div className="flex min-w-0 items-start gap-3">
+      <div className="grid size-9 shrink-0 place-items-center rounded-lg bg-[#1A3673] text-white shadow-sm">
+        {icon}
+      </div>
+      <div className="min-w-0">
+        <h3 className="text-xs font-black uppercase tracking-[0.16em] text-slate-950">
+          {title}
+        </h3>
+        {description && (
+          <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+            {description}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function DateField({
+  label,
+  registration,
+  tone = "default",
+}: {
+  label: string;
+  registration: ReturnType<typeof useForm<FormValues>>["register"] extends (name: any) => infer R ? R : never;
+  tone?: "default" | "success";
+}) {
+  return (
+    <label className="space-y-1.5">
+      <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+        {label}
+      </span>
+      <input
+        type="date"
+        {...registration}
+        className={`min-h-11 w-full rounded-lg border p-3 text-sm font-bold outline-none transition-all focus:ring-2 ${
+          tone === "success"
+            ? "border-emerald-100 bg-emerald-50/40 text-emerald-800 focus:ring-emerald-500/20"
+            : "border-slate-200 bg-white text-slate-700 focus:ring-blue-500/20"
+        }`}
+      />
+    </label>
+  );
+}
+
 export function OperationsSettingsModal({
   open,
   onClose,
@@ -65,9 +131,12 @@ export function OperationsSettingsModal({
   });
 
   const requeredSsoma = watch("requeredSsoma");
+  const ssomaRequirementIds = watch("ssomaRequirementIds") || [];
   const { data: requirementsResult, isLoading: loadingRequirements } = useRequirementList(2, 1, 500);
   const { data: assignedResult, isLoading: loadingAssigned } = useSsomaOperationsRequirementList(
-    open && initialData?.operationsId ? initialData.operationsId : 0, 1, 500
+    open && initialData?.operationsId ? initialData.operationsId : 0,
+    1,
+    500,
   );
 
   const requirements = requirementsResult?.items || [];
@@ -79,15 +148,21 @@ export function OperationsSettingsModal({
 
   useEffect(() => {
     if (open && initialData) {
-      if (initialData.qualitySupervisorId) {
-        setQsOption({ value: initialData.qualitySupervisorId, label: initialData.qualitySupervisorName || "" });
-      }
-      if (initialData.projectManagerId) {
-        setPmOption({ value: initialData.projectManagerId, label: initialData.projectManagerName || "" });
-      }
-      if (initialData.operationsStatusId) {
-        setStatusOption({ value: initialData.operationsStatusId, label: initialData.operationStatusDesc || "" });
-      }
+      setQsOption(
+        initialData.qualitySupervisorId
+          ? { value: initialData.qualitySupervisorId, label: initialData.qualitySupervisorName || "" }
+          : null,
+      );
+      setPmOption(
+        initialData.projectManagerId
+          ? { value: initialData.projectManagerId, label: initialData.projectManagerName || "" }
+          : null,
+      );
+      setStatusOption(
+        initialData.operationsStatusId
+          ? { value: initialData.operationsStatusId, label: initialData.operationStatusDesc || "" }
+          : null,
+      );
 
       reset({
         ...defaultValues,
@@ -99,13 +174,12 @@ export function OperationsSettingsModal({
         plannedEndDate: initialData.plannedEndDate?.split("T")[0] || "",
         actualEndDate: initialData.actualEndDate?.split("T")[0] || "",
         operationsStatusId: initialData.operationsStatusId,
-        ssomaRequirementIds: [], // Reiniciamos para cargar los nuevos
+        ssomaRequirementIds: [],
       });
       setCurrentPage(1);
     }
   }, [open, initialData, reset]);
 
-  // Sincronización de requerimientos asignados: SOLO una vez al cargar o abrir
   const [hasInitializedRequirements, setHasInitializedRequirements] = useState(false);
 
   useEffect(() => {
@@ -115,13 +189,11 @@ export function OperationsSettingsModal({
     }
 
     if (open && assignedResult?.items && !hasInitializedRequirements && !loadingAssigned) {
-      const ids = assignedResult.items.map(item => String(item.requirementId));
+      const ids = assignedResult.items.map((item) => String(item.requirementId));
       setValue("ssomaRequirementIds", ids);
       setHasInitializedRequirements(true);
     }
   }, [open, assignedResult, setValue, hasInitializedRequirements, loadingAssigned]);
-
-  const ssomaRequirementIds = watch("ssomaRequirementIds") || [];
 
   const handleCheckboxChange = (id: string, checked: boolean) => {
     const currentIds = [...ssomaRequirementIds];
@@ -130,7 +202,7 @@ export function OperationsSettingsModal({
         setValue("ssomaRequirementIds", [...currentIds, id]);
       }
     } else {
-      setValue("ssomaRequirementIds", currentIds.filter(i => i !== id));
+      setValue("ssomaRequirementIds", currentIds.filter((i) => i !== id));
     }
   };
 
@@ -140,143 +212,258 @@ export function OperationsSettingsModal({
 
   return (
     <Modal
-      title="Ajustes de la Operación"
+      title="Ajustes de la Operacion"
+      subtitle="Actualiza responsables, fechas, estado y requisitos SSOMA."
       onClose={onClose}
       size="full"
       contentClassName="max-w-6xl"
+      bodyClassName="overflow-y-auto flex-1 min-h-0 bg-[#f6f8fb] px-3 py-3 sm:px-5 sm:py-4"
+      footerClassName="flex shrink-0 items-center bg-white px-4 py-3 sm:px-5"
       footer={
-        <div className="flex justify-end gap-3 w-full">
-          <Button type="button" variant="outline" onClick={onClose} disabled={saving}>Cancelar</Button>
-          <Button type="submit" form={formId} disabled={saving} className="!bg-[#1A3673] !hover:bg-[#132856] text-white px-10 rounded-xl font-black uppercase tracking-widest text-[10px]">
-            {saving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Guardando...</> : "Guardar Ajustes"}
+        <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:justify-end sm:gap-3">
+          <Button type="button" variant="outline" onClick={onClose} disabled={saving}>
+            Cancelar
+          </Button>
+          <Button
+            type="submit"
+            form={formId}
+            disabled={saving}
+            className="!bg-[#1A3673] !hover:bg-[#132856] min-h-11 rounded-lg px-6 text-[10px] font-black uppercase tracking-widest text-white sm:px-10"
+          >
+            {saving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Guardando...
+              </>
+            ) : (
+              "Guardar Ajustes"
+            )}
           </Button>
         </div>
       }
     >
-      <form id={formId} onSubmit={handleSubmit(onSubmit)} className="space-y-6 p-6">
-        
-        {/* PARTE SUPERIOR: CONFIGURACIÓN GENERAL */}
-        <div className="bg-white rounded-[2rem] border border-slate-100 p-8 shadow-sm space-y-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 !bg-[#1A3673] rounded-lg text-white shadow-lg shadow-slate-200"><Settings2 className="size-4" /></div>
-              <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest leading-none">Configuración General</h3>
-            </div>
-            
-            <label className={`flex items-center gap-4 px-6 py-2.5 rounded-xl border transition-all cursor-pointer ${requeredSsoma ? '!bg-[#1A3673] !border-[#1A3673] shadow-xl shadow-slate-200 text-white' : 'bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-400'}`}>
-              <span className="text-[10px] font-black uppercase tracking-[0.15em]">Requiere SSOMA</span>
-              <input type="checkbox" {...register("requeredSsoma")} className="size-5 accent-white cursor-pointer" />
+      <form id={formId} onSubmit={handleSubmit(onSubmit)} className="space-y-4 lg:space-y-5">
+        <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:p-5 lg:p-6">
+          <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <SectionHeader
+              icon={<Settings2 className="size-4" />}
+              title="Datos de operacion"
+              description="Responsables y estado actual"
+            />
+
+            <label
+              className={`flex min-h-11 cursor-pointer items-center justify-between gap-4 rounded-lg border px-4 py-3 transition-all sm:min-w-[220px] ${
+                requeredSsoma
+                  ? "border-[#1A3673] bg-[#1A3673] text-white shadow-sm"
+                  : "border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100"
+              }`}
+            >
+              <span className="text-[10px] font-black uppercase tracking-[0.15em]">
+                Requiere SSOMA
+              </span>
+              <input
+                type="checkbox"
+                {...register("requeredSsoma")}
+                className="size-5 cursor-pointer accent-white"
+              />
             </label>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-2"><UserCheck className="size-3" />Supervisor</label>
-              <Controller control={control} name="qualitySupervisorId" render={({ field }) => (
-                <SearchSelect placeholder="Buscar..." useOptions={useWorkerOperationsOptions} value={qsOption}
-                  onChange={(opt) => { setQsOption(opt); field.onChange(opt ? Number(opt.value) : null); }} />
-              )} />
+              <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-wider text-slate-400">
+                <UserCheck className="size-3" />
+                Supervisor de Calidad
+              </label>
+              <Controller
+                control={control}
+                name="qualitySupervisorId"
+                render={({ field }) => (
+                  <SearchSelect
+                    placeholder="Buscar supervisor..."
+                    useOptions={useWorkerOperationsOptions}
+                    value={qsOption}
+                    onChange={(opt) => {
+                      setQsOption(opt);
+                      field.onChange(opt ? Number(opt.value) : null);
+                    }}
+                  />
+                )}
+              />
             </div>
+
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-2"><Briefcase className="size-3" />Gerente de Proyecto</label>
-              <Controller control={control} name="projectManagerId" render={({ field }) => (
-                <SearchSelect placeholder="Buscar..." useOptions={useWorkerOperationsOptions} value={pmOption}
-                  onChange={(opt) => { setPmOption(opt); field.onChange(opt ? Number(opt.value) : null); }} />
-              )} />
+              <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-wider text-slate-400">
+                <Briefcase className="size-3" />
+                Gerente de Proyecto
+              </label>
+              <Controller
+                control={control}
+                name="projectManagerId"
+                render={({ field }) => (
+                  <SearchSelect
+                    placeholder="Buscar gerente..."
+                    useOptions={useWorkerOperationsOptions}
+                    value={pmOption}
+                    onChange={(opt) => {
+                      setPmOption(opt);
+                      field.onChange(opt ? Number(opt.value) : null);
+                    }}
+                  />
+                )}
+              />
             </div>
+
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-2"><LayoutGrid className="size-3" />Estado</label>
-              <Controller control={control} name="operationsStatusId" render={({ field }) => (
-                <SearchSelect placeholder="Seleccionar..." useOptions={useOperationsStatusSelect} value={statusOption}
-                  onChange={(opt) => { setStatusOption(opt); field.onChange(opt ? Number(opt.value) : null); }} />
-              )} />
+              <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-wider text-slate-400">
+                <LayoutGrid className="size-3" />
+                Estado
+              </label>
+              <Controller
+                control={control}
+                name="operationsStatusId"
+                render={({ field }) => (
+                  <SearchSelect
+                    placeholder="Seleccionar estado..."
+                    useOptions={useOperationsStatusSelect}
+                    value={statusOption}
+                    onChange={(opt) => {
+                      setStatusOption(opt);
+                      field.onChange(opt ? Number(opt.value) : null);
+                    }}
+                  />
+                )}
+              />
+            </div>
+          </div>
+        </section>
+
+        <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+            <SectionHeader
+              icon={<CalendarDays className="size-4" />}
+              title="Cronograma planificado"
+              description="Fechas acordadas de inicio y cierre"
+            />
+            <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <DateField label="Inicio planificado" registration={register("plannedStartDate")} />
+              <DateField label="Cierre planificado" registration={register("plannedEndDate")} />
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 pt-4">
-            <div className="space-y-6">
-              <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2 border-b pb-2">
-                <CalendarDays className="size-3" /> Cronograma Planificado
-              </h4>
-              <div className="grid grid-cols-2 gap-4">
-                <input type="date" {...register("plannedStartDate")} className="w-full rounded-xl border border-slate-200 p-3 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all" />
-                <input type="date" {...register("plannedEndDate")} className="w-full rounded-xl border border-slate-200 p-3 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all" />
-              </div>
-            </div>
-
-            <div className="space-y-6">
-              <h4 className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em] flex items-center gap-2 border-b border-emerald-50 pb-2">
-                <CalendarDays className="size-3" /> Ejecución Real
-              </h4>
-              <div className="grid grid-cols-2 gap-4">
-                <input type="date" {...register("actualStartDate")} className="w-full rounded-xl border border-emerald-100 bg-emerald-50/20 p-3 text-sm font-bold text-emerald-700 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all" />
-                <input type="date" {...register("actualEndDate")} className="w-full rounded-xl border border-emerald-100 bg-emerald-50/20 p-3 text-sm font-bold text-emerald-700 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all" />
-              </div>
+          <div className="rounded-lg border border-emerald-100 bg-white p-4 shadow-sm sm:p-5">
+            <SectionHeader
+              icon={<CalendarDays className="size-4" />}
+              title="Ejecucion real"
+              description="Fechas reales registradas en campo"
+            />
+            <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <DateField label="Inicio real" registration={register("actualStartDate")} tone="success" />
+              <DateField label="Cierre real" registration={register("actualEndDate")} tone="success" />
             </div>
           </div>
-        </div>
+        </section>
 
-        {/* PARTE INFERIOR: MATRIZ DE REQUERIMIENTOS */}
-        <div className="bg-white rounded-[2rem] border border-slate-100 p-6 shadow-sm space-y-4">
-          <div className="flex items-center gap-3">
-             <ListChecks className="size-5 text-slate-400" />
-             <div>
-                <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest leading-none">Matriz de Requerimientos</h3>
-                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-1.5">Gestión de cumplimiento por operación</p>
-             </div>
+        <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:p-5 lg:p-6">
+          <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+            <SectionHeader
+              icon={<ListChecks className="size-4" />}
+              title="Requerimientos SSOMA"
+              description="Selecciona los controles aplicables a la operacion"
+            />
+
+            <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-slate-500">
+              <ShieldCheck className="size-3.5 text-[#1A3673]" />
+              {ssomaRequirementIds.length} seleccionados
+            </div>
           </div>
 
-          <div className="pt-2">
-            {(loadingRequirements || loadingAssigned) ? (
-              <div className="py-10 flex flex-col items-center justify-center gap-4 text-slate-400">
-                <Loader2 className="size-8 animate-spin" />
-                <p className="text-[10px] font-black uppercase tracking-widest">Sincronizando registros...</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {requirements.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
-                    {paginatedRequirements.map((req) => (
-                      <label key={req.requirementId} className="group flex items-start gap-2 p-2.5 rounded-xl bg-slate-50/50 border border-slate-100 hover:border-[#1A3673] hover:bg-white transition-all cursor-pointer shadow-sm">
-                        <input 
-                          type="checkbox" 
-                          checked={ssomaRequirementIds.includes(String(req.requirementId))}
+          {!requeredSsoma && (
+            <div className="mb-4 rounded-lg border border-amber-100 bg-amber-50 px-4 py-3 text-xs font-bold text-amber-800">
+              Activa "Requiere SSOMA" si estos requerimientos deben aplicarse a la operacion.
+            </div>
+          )}
+
+          {(loadingRequirements || loadingAssigned) ? (
+            <div className="flex flex-col items-center justify-center gap-4 rounded-lg border border-dashed border-slate-200 bg-slate-50 py-12 text-slate-400">
+              <Loader2 className="size-8 animate-spin" />
+              <p className="text-[10px] font-black uppercase tracking-widest">
+                Sincronizando registros...
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {requirements.length > 0 ? (
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                  {paginatedRequirements.map((req) => {
+                    const checked = ssomaRequirementIds.includes(String(req.requirementId));
+
+                    return (
+                      <label
+                        key={req.requirementId}
+                        className={`group flex min-h-[76px] cursor-pointer items-start gap-3 rounded-lg border p-3 shadow-sm transition-all ${
+                          checked
+                            ? "border-[#1A3673] bg-blue-50/70"
+                            : "border-slate-100 bg-slate-50/60 hover:border-[#1A3673] hover:bg-white"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
                           onChange={(e) => handleCheckboxChange(String(req.requirementId), e.target.checked)}
-                          className="mt-1 size-4 accent-[#1A3673] cursor-pointer shrink-0" 
+                          className="mt-1 size-4 shrink-0 cursor-pointer accent-[#1A3673]"
                         />
-                        <div className="flex flex-col min-w-0">
-                          <span className="text-[10px] font-black text-slate-800 uppercase tracking-tight leading-tight group-hover:text-[#1A3673] line-clamp-1">{req.name}</span>
-                          <span className="text-[9px] text-slate-400 line-clamp-2 font-medium leading-tight mt-0.5">{req.description || 'Sin descripción'}</span>
+                        <div className="flex min-w-0 flex-col">
+                          <span className="line-clamp-2 text-[10px] font-black uppercase leading-tight tracking-tight text-slate-800 group-hover:text-[#1A3673]">
+                            {req.name}
+                          </span>
+                          <span className="mt-1 line-clamp-2 text-[9px] font-medium leading-tight text-slate-400">
+                            {req.description || "Sin descripcion"}
+                          </span>
                         </div>
                       </label>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-10 bg-slate-50 rounded-[2rem] border border-dashed border-slate-200">
-                    <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest italic">No se encontraron requerimientos</p>
-                  </div>
-                )}
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 py-10 text-center">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-300">
+                    No se encontraron requerimientos
+                  </p>
+                </div>
+              )}
 
-                {totalPages > 1 && (
-                  <div className="flex items-center justify-between pt-4 border-t border-slate-50">
-                    <p className="text-[10px] font-black text-slate-400 uppercase">Total: {requirements.length} registros</p>
-                    <div className="flex items-center gap-4">
-                      <button type="button" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}
-                        className="size-9 flex items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-400 hover:text-[#1A3673] disabled:opacity-20 transition-all shadow-sm">
-                        <ChevronLeft className="size-4" />
-                      </button>
-                      <span className="text-[10px] font-black text-slate-900 uppercase tracking-tighter">{currentPage} / {totalPages}</span>
-                      <button type="button" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}
-                        className="size-9 flex items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-400 hover:text-[#1A3673] disabled:opacity-20 transition-all shadow-sm">
-                        <ChevronRight className="size-4" />
-                      </button>
-                    </div>
+              {totalPages > 1 && (
+                <div className="flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-[10px] font-black uppercase text-slate-400">
+                    Total: {requirements.length} registros
+                  </p>
+                  <div className="flex items-center justify-between gap-3 sm:justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className="grid size-10 place-items-center rounded-lg border border-slate-200 bg-white text-slate-500 shadow-sm transition-all hover:text-[#1A3673] disabled:cursor-not-allowed disabled:opacity-30"
+                    >
+                      <ChevronLeft className="size-4" />
+                    </button>
+                    <span className="min-w-[64px] text-center text-[10px] font-black uppercase tracking-tighter text-slate-900">
+                      {currentPage} / {totalPages}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                      className="grid size-10 place-items-center rounded-lg border border-slate-200 bg-white text-slate-500 shadow-sm transition-all hover:text-[#1A3673] disabled:cursor-not-allowed disabled:opacity-30"
+                    >
+                      <ChevronRight className="size-4" />
+                    </button>
                   </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
+                </div>
+              )}
+            </div>
+          )}
+        </section>
       </form>
     </Modal>
   );

@@ -26,8 +26,10 @@ export function useAssignmentList(
   return useQuery({
     queryKey: qkAssignment.list(page, pageSize, search),
     queryFn: () => fetchOperationsPersonnelAssignmentList(page + 1, pageSize, search),
-    placeholderData: (prev) => prev,
-    staleTime: 60_000,
+    placeholderData: undefined,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
   });
 }
 
@@ -36,7 +38,10 @@ export function useAssignmentById(assignmentId?: number) {
     queryKey: qkAssignment.detail(assignmentId ?? 0),
     queryFn: () => fetchOperationsPersonnelAssignmentById(assignmentId!),
     enabled: !!assignmentId,
-    staleTime: 60_000,
+    placeholderData: undefined,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
   });
 }
 

@@ -13,7 +13,10 @@ export function useAttendanceStatusSelect(
   return useQuery({
     queryKey: qkAttendanceStatus.select(page, pageSize, search),
     queryFn: () => fetchAttendanceStatusSelect(page, pageSize, search),
-    staleTime: 5 * 60_000,
+    placeholderData: undefined,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
   });
 }
 
@@ -22,6 +25,9 @@ export function useAttendanceStatusById(attendanceStatusId?: number) {
     queryKey: qkAttendanceStatus.detail(attendanceStatusId ?? 0),
     queryFn: () => fetchAttendanceStatusById(attendanceStatusId!),
     enabled: !!attendanceStatusId,
-    staleTime: 5 * 60_000,
+    placeholderData: undefined,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
   });
 }

@@ -10,6 +10,7 @@ import {
   showLoading,
   showSuccess,
 } from "@/sharedKernel";
+import { toast } from "sonner";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { qkSquad } from "./squad.qk";
 import type {
@@ -27,8 +28,10 @@ export function useSquadList(
     queryKey: qkSquad.list(page, pageSize, workOrderId ?? 0, search),
     queryFn: () =>
       fetchOperationsSquadList(page + 1, pageSize, workOrderId, search),
-    placeholderData: (prev) => prev,
-    staleTime: 60_000,
+    placeholderData: undefined,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
   });
 }
 
@@ -37,7 +40,10 @@ export function useSquadById(squadId?: number) {
     queryKey: qkSquad.detail(squadId ?? 0),
     queryFn: () => fetchOperationsSquadById(squadId!),
     enabled: !!squadId,
-    staleTime: 60_000,
+    placeholderData: undefined,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
   });
 }
 
@@ -64,18 +70,17 @@ export function useUpdateSquad() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (dto: OperationsSquadUpdateDto) => {
-      showLoading("Actualizando cuadrilla...");
       return updateOperationsSquad(dto);
     },
     onSuccess: (resp) => {
       if (resp.status === 1) {
         queryClient.invalidateQueries({ queryKey: qkSquad.all });
-        showSuccess(resp.message || "Cuadrilla actualizada correctamente");
+        toast.success(resp.message || "Cuadrilla actualizada correctamente");
       } else {
-        showApiError(resp.message);
+        toast.error(resp.message || "Ocurrió un error al actualizar la cuadrilla");
       }
     },
-    onError: (err) => showApiError(err),
+    onError: (err) => toast.error(err instanceof Error ? err.message : "Error de conexión"),
   });
 }
 

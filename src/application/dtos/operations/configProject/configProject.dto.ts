@@ -11,6 +11,8 @@ export interface OperationsProjectConfigResponseDto {
   isRequireOvertime: boolean;
   isRequireOvertimeApproval: boolean;
   shift: number;
+  isRequireAppAttendance: boolean;
+  isRequireGroupPhoto: boolean;
 }
 
 export interface OperationsProjectConfigCreateDto {
@@ -25,6 +27,8 @@ export interface OperationsProjectConfigCreateDto {
   isRequireOvertime: boolean;
   isRequireOvertimeApproval: boolean;
   shift: number;
+  isRequireAppAttendance: boolean;
+  isRequireGroupPhoto: boolean;
 }
 
 export interface OperationsProjectConfigUpdateDto {
@@ -37,6 +41,8 @@ export interface OperationsProjectConfigUpdateDto {
   minutesTolerance: number;
   beforeOfficialTime: string;
   isRequirePhoto: boolean;
+  isRequireAppAttendance: boolean;
+  isRequireGroupPhoto: boolean;
   isRequireOvertime: boolean;
   isRequireOvertimeApproval: boolean;
   shift: number;

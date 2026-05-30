@@ -2,7 +2,7 @@ import { Modal, Button } from "@/layouts";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Loader2, Clock, ShieldAlert, Briefcase, Plus } from "lucide-react";
+import { Loader2, Clock, ShieldAlert, Briefcase, Plus, AlertTriangle } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import type { OperationsProjectConfigResponseDto } from "@/application/dtos/operations/configProject/configProject.dto";
 
@@ -15,6 +15,8 @@ const schema = z.object({
   minutesTolerance: z.coerce.number().min(0, "Debe ser mayor o igual a 0"),
   beforeOfficialTime: z.string().min(1, "Hora anticipada requerida"),
   isRequirePhoto: z.boolean().default(false),
+  isRequireAppAttendance: z.boolean().default(false),
+  isRequireGroupPhoto: z.boolean().default(false),
   isRequireOvertime: z.boolean().default(false),
   isRequireOvertimeApproval: z.boolean().default(false),
 });
@@ -29,6 +31,7 @@ interface ProjectConfigModalProps {
   initialData?: OperationsProjectConfigResponseDto | null;
   allConfigs?: OperationsProjectConfigResponseDto[];
   hasExistingConfig: boolean;
+  readOnly?: boolean;
 }
 
 const defaultValues: FormValues = {
@@ -40,6 +43,8 @@ const defaultValues: FormValues = {
   minutesTolerance: 15,
   beforeOfficialTime: "07:30",
   isRequirePhoto: true,
+  isRequireAppAttendance: false,
+  isRequireGroupPhoto: false,
   isRequireOvertime: false,
   isRequireOvertimeApproval: false,
 };
@@ -63,6 +68,7 @@ export function ProjectConfigModal({
   saving,
   initialData,
   allConfigs = [],
+  readOnly = false,
 }: ProjectConfigModalProps) {
 
   const [selectedId, setSelectedId] = useState<number | "NEW" | null>(null);
@@ -113,6 +119,8 @@ export function ProjectConfigModal({
           minutesTolerance: config.minutesTolerance ?? (config as any).MinutesTolerance ?? 0,
           beforeOfficialTime: config.beforeOfficialTime?.substring(0, 5) || "07:30",
           isRequirePhoto: !!(config.isRequirePhoto ?? (config as any).IsRequirePhoto),
+          isRequireAppAttendance: !!(config.isRequireAppAttendance ?? (config as any).IsRequireAppAttendance),
+          isRequireGroupPhoto: !!(config.isRequireGroupPhoto ?? (config as any).IsRequireGroupPhoto),
           isRequireOvertime: !!(config.isRequireOvertime ?? (config as any).IsRequireOvertime),
           isRequireOvertimeApproval: !!(config.isRequireOvertimeApproval ?? (config as any).IsRequireOvertimeApproval),
         });
@@ -124,12 +132,17 @@ export function ProjectConfigModal({
 
   const isEditMode = selectedId !== "NEW" && !!selectedId;
   const currentShift = isEditMode ? sortedConfigs.find(c => c.operationsProjectConfigId === selectedId)?.shift : null;
+  const modalTitle = readOnly
+    ? "Configuración de Aplicativo"
+    : isEditMode
+      ? "Editar Configuración"
+      : "Crear Nueva Configuración";
 
   return (
     <Modal
       title={
         <div className="flex items-center gap-2">
-          <span>{isEditMode ? "Editar Configuración" : "Crear Nueva Configuración"}</span>
+          <span>{modalTitle}</span>
           {isEditMode && currentShift && (
             <span className="ml-2 px-2 py-0.5 bg-[#1A3673]/10 text-[#1A3673] text-[9px] font-black rounded border border-[#1A3673]/20 uppercase tracking-widest">
               Turno {currentShift}
@@ -141,17 +154,21 @@ export function ProjectConfigModal({
       size="md"
       footer={
         <div className="flex justify-end gap-2 w-full">
-          <Button type="button" variant="outline" size="sm" onClick={onClose} disabled={saving}>Cancelar</Button>
-          <Button
-            type="submit"
-            form="project-config-form"
-            disabled={saving}
-            size="sm"
-            style={{ backgroundColor: '#1A3673', color: 'white' }}
-            className="px-6 rounded-lg font-black uppercase tracking-widest text-[9px] hover:opacity-90 transition-all shadow-sm shadow-blue-900/20"
-          >
-            {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : (isEditMode ? "Actualizar Turno" : "Guardar Nuevo")}
+          <Button type="button" variant="outline" size="sm" onClick={onClose} disabled={saving}>
+            {readOnly ? "Cerrar" : "Cancelar"}
           </Button>
+          {!readOnly && (
+            <Button
+              type="submit"
+              form="project-config-form"
+              disabled={saving}
+              size="sm"
+              style={{ backgroundColor: '#1A3673', color: 'white' }}
+              className="px-6 rounded-lg font-black uppercase tracking-widest text-[9px] hover:opacity-90 transition-all shadow-sm shadow-blue-900/20"
+            >
+              {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : (isEditMode ? "Actualizar Turno" : "Guardar Nuevo")}
+            </Button>
+          )}
         </div>
       }
     >
@@ -171,16 +188,18 @@ export function ProjectConfigModal({
             </button>
           ))}
 
-          <button
-            type="button"
-            onClick={() => setSelectedId("NEW")}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg border border-dashed font-black text-[9px] uppercase tracking-widest transition-all ${selectedId === "NEW"
-              ? 'bg-emerald-600 border-emerald-600 text-white shadow-md scale-105'
-              : 'bg-emerald-50/50 border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-300'}`}
-          >
-            <Plus className="size-3" />
-            Nuevo Turno
-          </button>
+          {!readOnly && (
+            <button
+              type="button"
+              onClick={() => setSelectedId("NEW")}
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-lg border border-dashed font-black text-[9px] uppercase tracking-widest transition-all ${selectedId === "NEW"
+                ? 'bg-emerald-600 border-emerald-600 text-white shadow-md scale-105'
+                : 'bg-emerald-50/50 border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-300'}`}
+            >
+              <Plus className="size-3" />
+              Nuevo Turno
+            </button>
+          )}
         </div>
       )}
 
@@ -196,14 +215,14 @@ export function ProjectConfigModal({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <label className="text-[8px] font-black text-slate-400 uppercase tracking-wider">Hora de Entrada</label>
-              <select {...register("entryTime")} className="w-full rounded-lg border border-slate-200 p-2 text-xs font-bold text-slate-700 outline-none focus:border-[#1A3673] transition-colors shadow-sm bg-white cursor-pointer">
+              <select {...register("entryTime")} disabled={readOnly} className="w-full rounded-lg border border-slate-200 p-2 text-xs font-bold text-slate-700 outline-none focus:border-[#1A3673] transition-colors shadow-sm bg-white cursor-pointer disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-default">
                 {entryTimeVal && !TIME_OPTIONS.includes(entryTimeVal) && <option value={entryTimeVal}>{entryTimeVal}</option>}
                 {TIME_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
             <div className="space-y-1">
               <label className="text-[8px] font-black text-slate-400 uppercase tracking-wider">Hora de Salida</label>
-              <select {...register("departureTime")} className="w-full rounded-lg border border-slate-200 p-2 text-xs font-bold text-slate-700 outline-none focus:border-[#1A3673] transition-colors shadow-sm bg-white cursor-pointer">
+              <select {...register("departureTime")} disabled={readOnly} className="w-full rounded-lg border border-slate-200 p-2 text-xs font-bold text-slate-700 outline-none focus:border-[#1A3673] transition-colors shadow-sm bg-white cursor-pointer disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-default">
                 {departureTimeVal && !TIME_OPTIONS.includes(departureTimeVal) && <option value={departureTimeVal}>{departureTimeVal}</option>}
                 {TIME_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
@@ -213,13 +232,13 @@ export function ProjectConfigModal({
               <input
                 type="number"
                 {...register("minutesTolerance")}
-                disabled={!isAllowDelayEnabled}
+                disabled={readOnly || !isAllowDelayEnabled}
                 className="w-full rounded-lg border border-slate-200 p-2 text-xs font-bold text-slate-700 outline-none disabled:bg-slate-50 disabled:text-slate-300 shadow-sm"
               />
             </div>
             <div className="space-y-1">
               <label className="text-[8px] font-black text-slate-400 uppercase tracking-wider">Tiempo Anticipado</label>
-              <select {...register("beforeOfficialTime")} className="w-full rounded-lg border border-slate-200 p-2 text-xs font-bold text-slate-700 outline-none focus:border-[#1A3673] transition-colors shadow-sm bg-white cursor-pointer">
+              <select {...register("beforeOfficialTime")} disabled={readOnly} className="w-full rounded-lg border border-slate-200 p-2 text-xs font-bold text-slate-700 outline-none focus:border-[#1A3673] transition-colors shadow-sm bg-white cursor-pointer disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-default">
                 {beforeOfficialTimeVal && !TIME_OPTIONS.includes(beforeOfficialTimeVal) && <option value={beforeOfficialTimeVal}>{beforeOfficialTimeVal}</option>}
                 {TIME_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
@@ -233,17 +252,36 @@ export function ProjectConfigModal({
             <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Controles Administrativos</h3>
           </div>
 
+          <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-amber-800">
+            <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-amber-500" />
+            <p className="text-[9px] font-bold leading-4">
+              La asistencia por app solo debe habilitarse en proyectos con máximo de 10 personas.
+            </p>
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <label className="flex items-center gap-3 p-3.5 rounded-xl bg-white border border-slate-200 shadow-sm cursor-pointer hover:bg-slate-50 transition-all group">
-              <input type="checkbox" {...register("allowDelay")} className="size-4 rounded accent-[#1A3673]" />
+              <input type="checkbox" {...register("allowDelay")} disabled={readOnly} className="size-4 rounded accent-[#1A3673] disabled:cursor-default" />
               <div className="flex flex-col">
                 <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest group-hover:text-slate-900">Habilitar Tolerancia</span>
               </div>
             </label>
             <label className="flex items-center gap-3 p-3.5 rounded-xl bg-white border border-slate-200 shadow-sm cursor-pointer hover:bg-slate-50 transition-all group">
-              <input type="checkbox" {...register("isRequirePhoto")} className="size-4 rounded accent-[#1A3673]" />
+              <input type="checkbox" {...register("isRequirePhoto")} disabled={readOnly} className="size-4 rounded accent-[#1A3673] disabled:cursor-default" />
               <div className="flex flex-col">
-                <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest group-hover:text-slate-900">Obligar Foto</span>
+                <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest group-hover:text-slate-900">Obligar Foto Personal</span>
+              </div>
+            </label>
+            <label className="flex items-center gap-3 p-3.5 rounded-xl bg-white border border-slate-200 shadow-sm cursor-pointer hover:bg-slate-50 transition-all group">
+              <input type="checkbox" {...register("isRequireAppAttendance")} disabled={readOnly} className="size-4 rounded accent-[#1A3673] disabled:cursor-default" />
+              <div className="flex flex-col">
+                <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest group-hover:text-slate-900">Asistencia por App</span>
+              </div>
+            </label>
+            <label className="flex items-center gap-3 p-3.5 rounded-xl bg-white border border-slate-200 shadow-sm cursor-pointer hover:bg-slate-50 transition-all group">
+              <input type="checkbox" {...register("isRequireGroupPhoto")} disabled={readOnly} className="size-4 rounded accent-[#1A3673] disabled:cursor-default" />
+              <div className="flex flex-col">
+                <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest group-hover:text-slate-900">Foto Grupal</span>
               </div>
             </label>
           </div>
@@ -256,7 +294,7 @@ export function ProjectConfigModal({
           </div>
 
           <label className={`flex items-center gap-3 p-3.5 rounded-xl border-2 transition-all cursor-pointer ${isOverTimeEnabled ? 'bg-[#1A3673] border-[#1A3673] text-white shadow-md' : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300'}`}>
-            <input type="checkbox" {...register("isRequireOvertime")} className="size-4 rounded accent-[#ffffff]" />
+            <input type="checkbox" {...register("isRequireOvertime")} disabled={readOnly} className="size-4 rounded accent-[#ffffff] disabled:cursor-default" />
             <span className="text-[10px] font-black uppercase tracking-widest">Habilitar Horas Extra</span>
           </label>
         </div>

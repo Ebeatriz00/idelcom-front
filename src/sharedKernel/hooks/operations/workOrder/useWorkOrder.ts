@@ -27,8 +27,10 @@ export function useWorkOrderList(
     queryKey: qkWorkOrder.list(page, pageSize, operationsId ?? 0, search),
     queryFn: () =>
       fetchOperationsWorkOrderList(page + 1, pageSize, operationsId, search),
-    placeholderData: (prev) => prev,
-    staleTime: 60_000,
+    placeholderData: undefined,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
     enabled: !!operationsId,
   });
 }
@@ -38,7 +40,10 @@ export function useWorkOrderById(workOrderId?: number) {
     queryKey: qkWorkOrder.detail(workOrderId ?? 0),
     queryFn: () => fetchOperationsWorkOrderById(workOrderId!),
     enabled: !!workOrderId,
-    staleTime: 60_000,
+    placeholderData: undefined,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
   });
 }
 

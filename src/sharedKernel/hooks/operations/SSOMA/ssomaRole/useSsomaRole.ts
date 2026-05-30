@@ -18,5 +18,8 @@ export function useSsomaRoleSelect(
   return useQuery<Paginated<SsomaRoleSelectDto>>({
     queryKey: qkSsomaRole.list(page, pageSize, search),
     queryFn: () => fetchSsomaRoleSelect(page, pageSize, search),
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
   });
 }

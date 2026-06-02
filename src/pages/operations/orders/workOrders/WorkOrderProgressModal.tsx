@@ -950,7 +950,7 @@ export function WorkOrderProgressModal({
                       })}
                     </div>
                   </div>
-                )}
+                ))}
               </div>
             );
           })}

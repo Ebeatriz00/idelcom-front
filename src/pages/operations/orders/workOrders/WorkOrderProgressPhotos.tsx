@@ -273,12 +273,6 @@ export function WorkOrderProgressPhotos({ progressItem }: Props) {
                 id={`thumb-${globalIndex}`}
                 type="button"
                 onClick={() => setActivePhotoIndex(globalIndex)}
-                onMouseEnter={() => {
-                  void ensurePhotoSource(photo.fileUid, photo.url);
-                }}
-                onFocus={() => {
-                  void ensurePhotoSource(photo.fileUid, photo.url);
-                }}
                 className={cn(
                   "relative flex aspect-square items-center justify-center overflow-hidden rounded-2xl border-2 bg-slate-50 transition-all active:scale-95",
                   isActive
@@ -291,7 +285,7 @@ export function WorkOrderProgressPhotos({ progressItem }: Props) {
                     src={resolvedUrl}
                     alt={`Evidencia ${globalIndex + 1}`}
                     onError={() => {
-                      void ensurePhotoSource(photo.fileUid, photo.url);
+                      setBrokenPhotos((prev) => ({ ...prev, [photo.fileUid]: true }));
                     }}
                     className="h-full w-full object-cover transition-transform duration-500 hover:scale-110"
                   />

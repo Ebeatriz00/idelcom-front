@@ -3,6 +3,7 @@ import {
   deleteOperationsWorkOrder,
   fetchOperationsWorkOrderById,
   fetchOperationsWorkOrderList,
+  fetchOperationsWorkOrderSelect,
   updateOperationsWorkOrder,
 } from "@/infrastructure";
 import {
@@ -101,5 +102,23 @@ export function useDeleteWorkOrder() {
       }
     },
     onError: (err) => showApiError(err),
+  });
+}
+
+export function useWorkOrderSelect(
+  operationsId: number,
+  page: number = 1,
+  pageSize: number = 500,
+  search: string = ""
+) {
+  return useQuery({
+    queryKey: qkWorkOrder.select(operationsId, page, pageSize, search),
+    queryFn: () =>
+      fetchOperationsWorkOrderSelect(operationsId, page, pageSize, search),
+    placeholderData: undefined,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
+    enabled: !!operationsId,
   });
 }

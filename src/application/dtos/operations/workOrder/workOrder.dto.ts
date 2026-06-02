@@ -44,3 +44,9 @@ export interface OperationsWorkOrderCreateDto {
 export interface OperationsWorkOrderUpdateDto extends OperationsWorkOrderCreateDto {
   workOrderId: number;
 }
+
+export interface OperationsWorkOrderSelectItem {
+  workOrderId: number;
+  workOrderName?: string;
+  workOrderCode?: string;
+}

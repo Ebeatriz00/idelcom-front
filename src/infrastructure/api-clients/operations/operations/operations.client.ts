@@ -45,29 +45,25 @@ export async function createOperations(
 export async function updateOperations(
   dto: OperationsUpdateDto & { closurePdfFile?: File }
 ): Promise<GlobalResponse> {
-  let payload: any = dto;
-  let headers = {};
+  const formData = new FormData();
 
-  if (dto.closurePdfFile) {
-    const formData = new FormData();
-    for (const key in dto) {
-      const val = (dto as any)[key];
-      if (val !== undefined && val !== null) {
-        if (val instanceof Date) {
-          formData.append(key, val.toISOString());
-        } else {
-          formData.append(key, val);
-        }
+  for (const key in dto) {
+    const val = (dto as any)[key];
+    if (val !== undefined && val !== null) {
+      if (val instanceof Date) {
+        formData.append(key, val.toISOString());
+      } else if (val instanceof File) {
+        formData.append(key, val);
+      } else {
+        formData.append(key, String(val));
       }
     }
-    payload = formData;
-    headers = { "Content-Type": "multipart/form-data" };
   }
 
   const { data } = await http.put<GlobalResponse>(
     "/Operations/Update",
-    payload,
-    { headers }
+    formData,
+    { headers: { "Content-Type": "multipart/form-data" } }
   );
   return data;
 }

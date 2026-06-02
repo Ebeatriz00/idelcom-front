@@ -256,17 +256,6 @@ export function OrderHeader({
                 </button>
               )}
 
-              {opDetail?.closurePdfFileUid && (
-                <a
-                  href={`${import.meta.env.VITE_API_URL || ""}/files/${opDetail.closurePdfFileUid}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-emerald-600 text-[10px] font-black uppercase tracking-widest text-white hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-900/10 active:scale-95"
-                >
-                  <FileText className="size-3.5" />
-                  Descargar Acta
-                </a>
-              )}
 
               <button
                 onClick={() => onOpenHistory(selectedOrder.operationsId!, selectedOrder)}

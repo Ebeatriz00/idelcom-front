@@ -6,6 +6,7 @@ import {
   showApiError,
   useOperationsWorkOrderProgressList,
   useWorkOrderActivitySelect,
+  useWorkOrderSelect,
 } from "@/sharedKernel";
 import { exportExcel } from "@/sharedKernel/utils/export/exportsGeneric";
 import { clsx, type ClassValue } from "clsx";
@@ -100,9 +101,15 @@ export function WorkOrderProgressModal({
 }: Props) {
   const [view, setView] = useState<ViewType>("dia");
   const [selectedDate, setSelectedDate] = useState<string>("");
+  const [selectedWorkOrderFilter, setSelectedWorkOrderFilter] = useState<
+    number | null
+  >(null);
   const [selectedActivityFilter, setSelectedActivityFilter] = useState<
     number | null
   >(activityId || null);
+  const [selectedSubActivityFilter, setSelectedSubActivityFilter] = useState<
+    number | null
+  >(null);
   const [selectedProgressItem, setSelectedProgressItem] =
     useState<OperationsWorkOrderProgressResponseDto | null>(null);
 
@@ -148,6 +155,16 @@ export function WorkOrderProgressModal({
     "",
   );
   const activitiesList = activitiesData?.items || [];
+  const mainActivities = activitiesList.filter((a) => !a.parentActivityId);
+  const subActivities = activitiesList.filter((a) => a.parentActivityId);
+
+  const { data: workOrdersData } = useWorkOrderSelect(
+    operationsId ?? 0,
+    1,
+    500,
+    "",
+  );
+  const workOrdersList = workOrdersData?.items || [];
 
   const { data, isLoading } = useOperationsWorkOrderProgressList(
     1,
@@ -160,12 +177,43 @@ export function WorkOrderProgressModal({
 
   const allItems = data?.items || [];
 
+  useEffect(() => {
+    if (activitiesList.length > 0 || allItems.length > 0) {
+      console.log("DEBUG FRONTEND DATA", {
+        primerItemDeLaTabla: allItems[0],
+        primeraActividad: activitiesList[0]
+      });
+    }
+  }, [activitiesList, allItems]);
+
   const activityItems = useMemo(() => {
     let filtered = allItems;
-    if (selectedActivityFilter) {
-      filtered = allItems.filter(
-        (item) => item.activityId === selectedActivityFilter,
+    if (selectedWorkOrderFilter) {
+      filtered = filtered.filter(
+        (item) => item.workOrderId === selectedWorkOrderFilter,
       );
+    }
+    
+    if (selectedActivityFilter) {
+      if (selectedSubActivityFilter) {
+        filtered = filtered.filter(
+          (item) =>
+            item.activityId === selectedSubActivityFilter ||
+            item.subActivityId === selectedSubActivityFilter,
+        );
+      } else {
+        const validActivityIds = [
+          selectedActivityFilter,
+          ...subActivities
+            .filter((a) => a.parentActivityId === selectedActivityFilter)
+            .map((a) => a.activityId),
+        ];
+        filtered = filtered.filter(
+          (item) =>
+            validActivityIds.includes(item.activityId) ||
+            item.subActivityId === selectedActivityFilter,
+        );
+      }
     }
 
     const byActivity: Record<number, typeof filtered> = {};
@@ -187,62 +235,32 @@ export function WorkOrderProgressModal({
     });
 
     return calculated.sort((a, b) => b.progressId - a.progressId);
-  }, [allItems, selectedActivityFilter]);
+  }, [
+    allItems,
+    selectedWorkOrderFilter,
+    selectedActivityFilter,
+    selectedSubActivityFilter,
+    subActivities,
+  ]);
 
   const availableDates = useMemo(() => {
     const dates = activityItems.map((item) => item.reportedDate.split("T")[0]);
     return Array.from(new Set(dates)).sort((a, b) => b.localeCompare(a));
   }, [activityItems]);
 
-  useEffect(() => {
-    if (open && availableDates.length > 0 && !selectedDate) {
-      setSelectedDate(availableDates[0]);
+  const getUnitSymbol = (item: any) => {
+    if (item.measurementUnitSymbol) return item.measurementUnitSymbol;
+    
+    const actDetail = activitiesList.find((a: any) => a.activityId === item.activityId);
+    if ((actDetail as any)?.measurementUnitSymbol) return (actDetail as any).measurementUnitSymbol;
+    
+    if (actDetail?.parentActivityId) {
+      const parentDetail = activitiesList.find((a: any) => a.activityId === actDetail.parentActivityId);
+      if ((parentDetail as any)?.measurementUnitSymbol) return (parentDetail as any).measurementUnitSymbol;
     }
-  }, [open, availableDates, selectedDate]);
-
-  const displayedItems = useMemo(() => {
-    if (view === "dia") {
-      return activityItems.filter(
-        (item) => item.reportedDate.split("T")[0] === selectedDate,
-      );
-    }
-    return activityItems;
-  }, [activityItems, view, selectedDate]);
-
-  const stats = useMemo(() => {
-    const firstItem = activityItems[0];
-    const currentQty = firstItem?.currentQuantity || 0;
-    const targetQty = firstItem?.targetQuantity || 0;
-
-    let percentage = 0;
-    if (targetQty > 0) {
-      percentage = Math.round((Number(currentQty) / targetQty) * 100);
-    }
-
-    const uniquePersons = new Set(
-      activityItems.map((i) => i.workerName).filter(Boolean),
-    ).size;
-
-    return {
-      count: activityItems.length,
-      persons: uniquePersons,
-      current:
-        currentQty % 1 === 0 ? currentQty : Number(currentQty).toFixed(1),
-      target: targetQty % 1 === 0 ? targetQty : Number(targetQty).toFixed(1),
-      percentage,
-      hasTarget: targetQty > 0,
-    };
-  }, [activityItems]);
-
-  const groupedItems = useMemo(() => {
-    const groups: Record<string, typeof allItems> = {};
-    displayedItems.forEach((item) => {
-      const date = item.reportedDate.split("T")[0];
-      if (!groups[date]) groups[date] = [];
-      groups[date].push(item);
-    });
-    return Object.entries(groups).sort((a, b) => b[0].localeCompare(a[0]));
-  }, [displayedItems]);
+    
+    return "";
+  };
 
   const handleExportExcel = async () => {
     try {
@@ -313,7 +331,7 @@ export function WorkOrderProgressModal({
           value: (r) => r.activityName || "Desconocida",
           width: 40,
         },
-        { label: "Unidad", value: (r) => r.measurementUnitSymbol, width: 15 },
+        { label: "Unidad", value: (r) => r.measurementUnitSymbol || "", width: 15 },
         { label: "Avance Total", value: (r) => r.currentQuantity, width: 15 },
         { label: "Meta", value: (r) => r.targetQuantity, width: 15 },
         {
@@ -336,7 +354,7 @@ export function WorkOrderProgressModal({
         },
         {
           label: "Unidad",
-          value: (r) => r.measurementUnitSymbol || "",
+          value: (r) => getUnitSymbol(r),
           width: 10,
         },
         {
@@ -388,6 +406,60 @@ export function WorkOrderProgressModal({
       );
     }
   };
+
+  useEffect(() => {
+    if (open && availableDates.length > 0) {
+      if (!selectedDate || !availableDates.includes(selectedDate)) {
+        setSelectedDate(availableDates[0]);
+      }
+    } else if (availableDates.length === 0) {
+      setSelectedDate("");
+    }
+  }, [open, availableDates, selectedDate]);
+
+  const displayedItems = useMemo(() => {
+    if (view === "dia") {
+      return activityItems.filter(
+        (item) => item.reportedDate.split("T")[0] === selectedDate,
+      );
+    }
+    return activityItems;
+  }, [activityItems, view, selectedDate]);
+
+  const stats = useMemo(() => {
+    const firstItem = activityItems[0];
+    const currentQty = firstItem?.currentQuantity || 0;
+    const targetQty = firstItem?.targetQuantity || 0;
+
+    let percentage = 0;
+    if (targetQty > 0) {
+      percentage = Math.round((Number(currentQty) / targetQty) * 100);
+    }
+
+    const uniquePersons = new Set(
+      activityItems.map((i) => i.workerName).filter(Boolean),
+    ).size;
+
+    return {
+      count: activityItems.length,
+      persons: uniquePersons,
+      current:
+        currentQty % 1 === 0 ? currentQty : Number(currentQty).toFixed(1),
+      target: targetQty % 1 === 0 ? targetQty : Number(targetQty).toFixed(1),
+      percentage,
+      hasTarget: targetQty > 0,
+    };
+  }, [activityItems]);
+
+  const groupedItems = useMemo(() => {
+    const groups: Record<string, typeof allItems> = {};
+    displayedItems.forEach((item) => {
+      const date = item.reportedDate.split("T")[0];
+      if (!groups[date]) groups[date] = [];
+      groups[date].push(item);
+    });
+    return Object.entries(groups).sort((a, b) => b[0].localeCompare(a[0]));
+  }, [displayedItems]);
 
   if (!open) return null;
 
@@ -441,28 +513,92 @@ export function WorkOrderProgressModal({
           </section>
 
           <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-              <div className="w-full min-w-0 lg:max-w-md">
-                <label className="mb-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400">
-                  <Filter className="size-3.5" />
-                  Filtrar actividad
-                </label>
-                <select
-                  value={selectedActivityFilter || ""}
-                  onChange={(e) =>
-                    setSelectedActivityFilter(
-                      e.target.value ? Number(e.target.value) : null,
-                    )
-                  }
-                  className="min-h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-4 text-[11px] font-bold uppercase tracking-widest text-slate-700 outline-none transition-all focus:border-slate-400 focus:bg-white"
-                >
-                  <option value="">Todas las actividades</option>
-                  {activitiesList.map((act: any) => (
-                    <option key={act.activityId} value={act.activityId}>
-                      {act.activityName}
-                    </option>
-                  ))}
-                </select>
+            <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
+              <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-end lg:max-w-4xl">
+                <div className="min-w-0 flex-1">
+                  <label className="mb-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                    <Filter className="size-3.5" />
+                    Filtrar OT
+                  </label>
+                  <select
+                    value={selectedWorkOrderFilter || ""}
+                    onChange={(e) => {
+                      setSelectedWorkOrderFilter(
+                        e.target.value ? Number(e.target.value) : null,
+                      );
+                      setSelectedActivityFilter(null);
+                      setSelectedSubActivityFilter(null);
+                    }}
+                    className="min-h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-4 text-[11px] font-bold uppercase tracking-widest text-slate-700 outline-none transition-all focus:border-slate-400 focus:bg-white"
+                  >
+                    <option value="">Todas las OTs</option>
+                    {workOrdersList.map((wo: any) => (
+                      <option key={wo.workOrderId} value={wo.workOrderId}>
+                        {wo.workOrderCode
+                          ? `${wo.workOrderCode} - ${wo.workOrderName}`
+                          : wo.workOrderName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <label className="mb-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                    <Filter className="size-3.5" />
+                    Filtrar actividad
+                  </label>
+                  <select
+                    value={selectedActivityFilter || ""}
+                    onChange={(e) => {
+                      setSelectedActivityFilter(
+                        e.target.value ? Number(e.target.value) : null,
+                      );
+                      setSelectedSubActivityFilter(null);
+                    }}
+                    className="min-h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-4 text-[11px] font-bold uppercase tracking-widest text-slate-700 outline-none transition-all focus:border-slate-400 focus:bg-white"
+                  >
+                    <option value="">Todas las actividades</option>
+                    {(selectedWorkOrderFilter
+                      ? mainActivities.filter(
+                          (a) => a.workOrderId === selectedWorkOrderFilter,
+                        )
+                      : mainActivities
+                    ).map((act: any) => (
+                      <option key={act.activityId} value={act.activityId}>
+                        {act.activityName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <label className="mb-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                    <Filter className="size-3.5" />
+                    Filtrar subactividad
+                  </label>
+                  <select
+                    value={selectedSubActivityFilter || ""}
+                    onChange={(e) =>
+                      setSelectedSubActivityFilter(
+                        e.target.value ? Number(e.target.value) : null,
+                      )
+                    }
+                    disabled={!selectedActivityFilter}
+                    className="min-h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-4 text-[11px] font-bold uppercase tracking-widest text-slate-700 outline-none transition-all disabled:opacity-50 focus:border-slate-400 focus:bg-white"
+                  >
+                    <option value="">Todas las subactividades</option>
+                    {(selectedActivityFilter
+                      ? subActivities.filter(
+                          (a) => a.parentActivityId === selectedActivityFilter,
+                        )
+                      : []
+                    ).map((sub: any) => (
+                      <option key={sub.activityId} value={sub.activityId}>
+                        {sub.activityName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -582,108 +718,226 @@ export function WorkOrderProgressModal({
               </div>
             ) : (
               <div className="space-y-6">
-                {groupedItems.map(([date, group]) => (
-                  <div key={date} className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <CalendarDays className="size-4 text-slate-400" />
-                      <span className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-900">
-                        {formatDateLabel(date).full}
-                      </span>
-                      <span className="ml-auto rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[9px] font-black uppercase tracking-widest text-slate-500">
-                        {group.length} reporte{group.length === 1 ? "" : "s"}
-                      </span>
-                    </div>
+                {groupedItems.map(([date, itemsOfDay]) => {
+                  // Agrupar por Actividad Padre
+                  const byActivity: Record<number, typeof itemsOfDay> = {};
+                  itemsOfDay.forEach((item) => {
+                    const pid = item.activityId;
+                    if (!byActivity[pid]) byActivity[pid] = [];
+                    byActivity[pid].push(item);
+                  });
 
-                    <div className="grid gap-3">
-                      {group.map((item) => {
-                        const hasObs =
-                          item.observations &&
-                          item.observations !== "Sin observaciones";
-                        const photosCount = item.photos?.length || 0;
+                  return (
+                    <div key={date} className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <CalendarDays className="size-4 text-slate-400" />
+                        <span className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-900">
+                          {formatDateLabel(date).full}
+                        </span>
+                        <div className="h-px flex-1 bg-slate-200" />
+                        <span className="ml-auto rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[9px] font-black uppercase tracking-widest text-slate-500">
+                          {itemsOfDay.length} reporte{itemsOfDay.length === 1 ? "" : "s"}
+                        </span>
+                      </div>
 
-                        return (
-                          <article
-                            key={item.progressId}
-                            className="rounded-lg border border-slate-200 bg-slate-50/60 p-4 shadow-sm transition-all hover:border-slate-300 hover:bg-white"
-                          >
-                            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                              <div className="min-w-0 flex-1">
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <h3 className="min-w-0 text-sm font-black uppercase tracking-tight text-slate-950 sm:text-base">
-                                    {item.activityName ||
-                                      "Actividad sin nombre"}
-                                  </h3>
-                                  <span className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[9px] font-black uppercase tracking-widest text-slate-500">
-                                    Unidad
-                                  </span>
-                                </div>
+                      <div className="grid gap-6">
+                        {Object.entries(byActivity).map(([activityIdStr, reports]) => {
+                          const parentName = reports[0].activityName;
+                          const workOrderCode = reports[0].workOrderCode;
+                          const workOrderName = workOrdersList.find(w => w.workOrderId === reports[0].workOrderId)?.workOrderName || workOrderCode;
+                          const hideParentHeader = !!selectedSubActivityFilter;
 
-                                <div className="mt-2 flex flex-wrap items-center gap-2 text-[9px] font-bold uppercase tracking-widest text-slate-400">
-                                  <span>Responsable</span>
-                                  <span className="text-slate-700">
-                                    {item.workerName || "Sin asignar"}
-                                  </span>
-                                </div>
+                          // Separar reportes del padre y de los hijos
+                          const parentReports = reports.filter(r => !r.subActivityId);
+                          const childReports = reports.filter(r => r.subActivityId);
 
-                                {hasObs && (
-                                  <div className="mt-3 rounded-lg border border-amber-100 bg-amber-50 px-3 py-2">
-                                    <p className="mb-1 text-[9px] font-black uppercase tracking-widest text-amber-700">
-                                      Observaciones
-                                    </p>
-                                    <div className="space-y-1">
-                                      {item
-                                        .observations!.split("|")
-                                        .map((obs, index) => (
-                                          <p
-                                            key={index}
-                                            className="text-[10px] font-medium leading-relaxed text-amber-700"
-                                          >
-                                            {obs.trim()}
-                                          </p>
-                                        ))}
+                          return (
+                            <div key={activityIdStr} className="flex flex-col gap-3">
+                              
+                              {/* 1. Tarjeta del Padre (O reportes reales del padre, o una tarjeta simulada) */}
+                              {!hideParentHeader && (
+                                parentReports.length > 0 ? (
+                                  parentReports.map(item => (
+                                  <article
+                                    key={item.progressId}
+                                    className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition-all hover:border-slate-300 relative z-10"
+                                  >
+                                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                                      <div className="min-w-0 flex-1">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                          <h3 className="min-w-0 text-sm font-black uppercase tracking-tight text-slate-950 sm:text-base">
+                                            {item.activityName || "Actividad sin nombre"}
+                                          </h3>
+                                          {workOrderName && (
+                                            <span className="rounded-lg border border-orange-200 bg-orange-50 px-2.5 py-1 text-[9px] font-black uppercase tracking-widest text-orange-600">
+                                              OT: {workOrderName}
+                                            </span>
+                                          )}
+                                        </div>
+
+                                        <div className="mt-2 flex flex-wrap items-center gap-2 text-[9px] font-bold uppercase tracking-widest text-slate-400">
+                                          <span>Responsable</span>
+                                          <span className="text-slate-700">
+                                            {item.workerName || "Sin asignar"}
+                                          </span>
+                                        </div>
+
+                                        {item.observations && item.observations !== "Sin observaciones" && (
+                                          <div className="mt-3 rounded-lg border border-amber-100 bg-amber-50 px-3 py-2">
+                                            <p className="mb-1 text-[9px] font-black uppercase tracking-widest text-amber-700">
+                                              Observaciones
+                                            </p>
+                                            <div className="space-y-1">
+                                              {item.observations.split("|").map((obs, index) => (
+                                                <p key={index} className="text-[10px] font-medium leading-relaxed text-amber-700">
+                                                  {obs.trim()}
+                                                </p>
+                                              ))}
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+
+                                      <div className="flex w-[180px] shrink-0 flex-col gap-2">
+                                        <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-3">
+                                          <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Avance</span>
+                                          <span className="text-xl font-black leading-none tracking-tight text-slate-950">
+                                            {item.reportedQuantity % 1 === 0 ? item.reportedQuantity : item.reportedQuantity.toFixed(1)}
+                                            <span className="text-sm font-bold text-slate-400 ml-1">
+                                              {getUnitSymbol(item)}
+                                            </span>
+                                          </span>
+                                        </div>
+                                        <button
+                                          type="button"
+                                          onClick={() => setSelectedProgressItem(prev => prev?.progressId === item.progressId ? null : item)}
+                                          className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-700 transition-all hover:bg-slate-50 hover:text-slate-950 active:scale-95"
+                                        >
+                                          <div className="relative">
+                                            <ImageIcon className="size-3.5" />
+                                            {(item.photos?.length || 0) > 0 && (
+                                              <span className="absolute -right-2 -top-2 grid size-4 place-items-center rounded-full border border-white bg-emerald-500 text-[7px] font-black">
+                                                {item.photos?.length}
+                                              </span>
+                                            )}
+                                          </div>
+                                          {selectedProgressItem?.progressId === item.progressId ? "Ocultar" : "Galería"}
+                                        </button>
+                                      </div>
                                     </div>
-                                  </div>
-                                )}
-                              </div>
-
-                              <div className="grid gap-2 sm:grid-cols-2 lg:w-[240px] lg:grid-cols-1">
-                                <div className="flex min-h-11 items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2">
-                                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">
-                                    Avance
-                                  </span>
-                                  <span className="text-2xl font-black leading-none tracking-tight text-slate-950">
-                                    {item.reportedQuantity % 1 === 0
-                                      ? item.reportedQuantity
-                                      : item.reportedQuantity.toFixed(1)}
-                                  </span>
-                                </div>
-
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    setSelectedProgressItem((prev) =>
-                                      prev?.progressId === item.progressId
-                                        ? null
-                                        : item,
-                                    )
-                                  }
-                                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-700 transition-all hover:bg-slate-50 hover:text-slate-950 active:scale-95"
-                                >
-                                  <div className="relative">
-                                    <ImageIcon className="size-3.5" />
-                                    {photosCount > 0 && (
-                                      <span className="absolute -right-2 -top-2 grid size-4 place-items-center rounded-full border border-white bg-emerald-500 text-[7px] font-black">
-                                        {photosCount}
+                                    {selectedProgressItem?.progressId === item.progressId && (
+                                      <div className="mt-4 border-t border-slate-200 pt-4">
+                                        <WorkOrderProgressPhotos progressItem={item} />
+                                      </div>
+                                    )}
+                                  </article>
+                                ))
+                              ) : (
+                                // Tarjeta simulada si el Padre no tiene reporte propio
+                                <article className="rounded-lg border border-slate-200 bg-slate-50 p-3 shadow-sm relative z-10">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <h3 className="min-w-0 text-sm font-black uppercase tracking-tight text-slate-500 sm:text-base">
+                                      {parentName || "Actividad Principal"}
+                                    </h3>
+                                    {workOrderName && (
+                                      <span className="rounded-lg border border-orange-100 bg-white px-2.5 py-1 text-[9px] font-black uppercase tracking-widest text-orange-500">
+                                        OT: {workOrderName}
                                       </span>
                                     )}
                                   </div>
-                                  {selectedProgressItem?.progressId ===
-                                  item.progressId
-                                    ? "Ocultar"
-                                    : "Galería"}
-                                </button>
-                              </div>
-                            </div>
+                                </article>
+                              ))}
+
+                              {/* 2. Tarjetas de los Hijos (Indentadas) */}
+                              {childReports.length > 0 && (
+                                <div className={hideParentHeader ? "relative mt-1" : "relative mt-1 pl-6 sm:pl-10"}>
+                                  {/* Línea visual conectora */}
+                                  {!hideParentHeader && (
+                                    <div className="absolute bottom-6 left-3 sm:left-5 top-[-20px] w-px bg-slate-200" />
+                                  )}
+                                  
+                                  <div className="grid gap-3 relative">
+                                    {childReports.map((item) => {
+                                      const hasObs = item.observations && item.observations !== "Sin observaciones";
+                                      const photosCount = item.photos?.length || 0;
+
+                                      return (
+                                        <article
+                                          key={item.progressId}
+                                          className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition-all hover:border-slate-300 relative"
+                                        >
+                                          {/* Bracito horizontal conector */}
+                                          {!hideParentHeader && (
+                                            <div className="absolute left-[-12px] sm:left-[-20px] top-8 h-px w-[12px] sm:w-[20px] bg-slate-200" />
+                                          )}
+                                          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                                            <div className="min-w-0 flex-1">
+                                              <div className="flex flex-wrap items-center gap-2">
+                                                <h3 className="min-w-0 text-sm font-black uppercase tracking-tight text-slate-950 sm:text-base">
+                                                  {item.subActivityName || item.activityName || "Actividad sin nombre"}
+                                                </h3>
+                                              </div>
+
+                                              <div className="mt-2 flex flex-wrap items-center gap-2 text-[9px] font-bold uppercase tracking-widest text-slate-400">
+                                                <span>Responsable</span>
+                                                <span className="text-slate-700">
+                                                  {item.workerName || "Sin asignar"}
+                                                </span>
+                                              </div>
+
+                                              {hasObs && (
+                                                <div className="mt-3 rounded-lg border border-amber-100 bg-amber-50 px-3 py-2">
+                                                  <p className="mb-1 text-[9px] font-black uppercase tracking-widest text-amber-700">
+                                                    Observaciones
+                                                  </p>
+                                                  <div className="space-y-1">
+                                                    {item.observations!.split("|").map((obs, index) => (
+                                                      <p key={index} className="text-[10px] font-medium leading-relaxed text-amber-700">
+                                                        {obs.trim()}
+                                                      </p>
+                                                    ))}
+                                                  </div>
+                                                </div>
+                                              )}
+                                            </div>
+
+                                            <div className="flex w-[180px] shrink-0 flex-col gap-2">
+                                              <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-3">
+                                                <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Avance</span>
+                                                <span className="text-xl font-black leading-none tracking-tight text-slate-950">
+                                                  {item.reportedQuantity % 1 === 0 ? item.reportedQuantity : item.reportedQuantity.toFixed(1)}
+                                                  <span className="text-sm font-bold text-slate-400 ml-1">
+                                                    {getUnitSymbol(item)}
+                                                  </span>
+                                                </span>
+                                              </div>
+
+                                              <button
+                                                type="button"
+                                                onClick={() =>
+                                                  setSelectedProgressItem((prev) =>
+                                                    prev?.progressId === item.progressId
+                                                      ? null
+                                                      : item,
+                                                  )
+                                                }
+                                                className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-700 transition-all hover:bg-slate-50 hover:text-slate-950 active:scale-95"
+                                              >
+                                                <div className="relative">
+                                                  <ImageIcon className="size-3.5" />
+                                                  {photosCount > 0 && (
+                                                    <span className="absolute -right-2 -top-2 grid size-4 place-items-center rounded-full border border-white bg-emerald-500 text-[7px] font-black">
+                                                      {photosCount}
+                                                    </span>
+                                                  )}
+                                                </div>
+                                                {selectedProgressItem?.progressId ===
+                                                item.progressId
+                                                  ? "Ocultar"
+                                                  : "Galería"}
+                                              </button>
+                                            </div>
+                                          </div>
 
                             {selectedProgressItem?.progressId ===
                               item.progressId && (
@@ -696,10 +950,17 @@ export function WorkOrderProgressModal({
                       })}
                     </div>
                   </div>
-                ))}
+                )}
               </div>
-            )}
-          </section>
+            );
+          })}
+        </div>
+      </div>
+    );
+  })}
+  </div>
+)}
+</section>
         </div>
       </Modal>
     </>

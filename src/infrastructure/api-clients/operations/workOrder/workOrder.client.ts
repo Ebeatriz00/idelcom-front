@@ -3,6 +3,7 @@ import type {
   OperationsWorkOrderResponseDto,
   OperationsWorkOrderUpdateDto,
   OperationsWorkOrderProgressReportResponseDto,
+  OperationsWorkOrderSelectItem,
   Paginated,
 } from "@/application";
 import http from "@/infrastructure";
@@ -92,6 +93,21 @@ export async function fetchOperationsWorkOrderProgressReport(
     "/OperationsWorkOrder/GetProgressReport",
     {
       params: { operationsId },
+    }
+  );
+  return data;
+}
+
+export async function fetchOperationsWorkOrderSelect(
+  operationsId: number,
+  page: number,
+  pageSize: number,
+  search?: string
+): Promise<Paginated<OperationsWorkOrderSelectItem>> {
+  const { data } = await http.get<Paginated<OperationsWorkOrderSelectItem>>(
+    "/OperationsWorkOrder/GetSelect",
+    {
+      params: { operationsId, page, pageSize, search },
     }
   );
   return data;

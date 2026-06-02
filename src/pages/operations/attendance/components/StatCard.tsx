@@ -28,7 +28,7 @@ const AccentBar = ({ accent }: { accent: string }) => (
  
 const IconBadge = ({ accent, icon: Icon }: { accent: string; icon: LucideIcon }) => (
   <div
-    className="p-3 rounded-xl transition-all duration-300 group-hover:scale-105"
+    className="flex size-11 shrink-0 items-center justify-center rounded-xl transition-all duration-300 group-hover:scale-105 sm:size-12"
     style={{ backgroundColor: `${accent}10`, color: accent }}
   >
     <Icon size={20} strokeWidth={2.5} />
@@ -36,7 +36,7 @@ const IconBadge = ({ accent, icon: Icon }: { accent: string; icon: LucideIcon })
 );
  
 const SubLabel = ({ accent, text }: { accent: string; text: string }) => (
-  <p className="text-[10px] text-zinc-400 font-semibold flex items-center gap-1">
+  <p className="flex items-center gap-1 text-[10px] font-semibold leading-tight text-zinc-400">
     <span
       className="w-1.5 h-1.5 rounded-full inline-block animate-pulse"
       style={{ backgroundColor: accent }}
@@ -48,16 +48,16 @@ const SubLabel = ({ accent, text }: { accent: string; text: string }) => (
 // ─── Main Component ───────────────────────────────────────────────────────────
  
 export const StatCard = ({ label, value, accent, icon, sub }: StatCardProps) => (
-  <div className="relative overflow-hidden bg-white border border-zinc-200/80 rounded-2xl p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 group">
+  <div className="group relative min-h-[116px] overflow-hidden rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md sm:p-5">
     <AccentGlow accent={accent} />
     <AccentBar accent={accent} />
  
-    <div className="flex items-center justify-between relative z-10">
-      <div className="space-y-1">
-        <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+    <div className="relative z-10 flex min-w-0 items-center justify-between gap-3">
+      <div className="min-w-0 space-y-1">
+        <p className="line-clamp-2 text-[10px] font-black uppercase leading-tight tracking-widest text-zinc-400">
           {label}
         </p>
-        <h3 className="text-2xl font-extrabold text-zinc-900 tracking-tight tabular-nums">
+        <h3 className="text-2xl font-extrabold tracking-tight text-zinc-900 tabular-nums">
           {value}
         </h3>
         {sub && <SubLabel accent={accent} text={sub} />}

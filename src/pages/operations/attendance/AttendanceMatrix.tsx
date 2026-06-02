@@ -35,7 +35,8 @@ export default function AttendanceMatrix() {
   const [squadId, setSquadId] = useState<number>();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string | number>("all");
-  const pageSize = 1000; // Carga masiva para que crezca hacia abajo
+  const [mobileTab, setMobileTab] = useState<"stats" | "calendar">("stats");
+  const pageSize = 1000;
   const [selectedDetail, setSelectedDetail] = useState<any>(null);
 
   const dateRange = useMemo(() => ({
@@ -127,36 +128,38 @@ export default function AttendanceMatrix() {
   };
 
   return (
-    <div className="min-h-screen max-w-full flex flex-col relative p-6 space-y-6 bg-slate-50/30 overflow-x-hidden selection:bg-indigo-100">
+    <div className="min-h-screen max-w-full flex flex-col relative overflow-x-hidden bg-slate-50/30 p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6 selection:bg-indigo-100">
       <Breadcrumb
         items={[
           { label: "Operaciones", href: "#" },
-          { label: "Matriz de Asistencia", current: true },
+          { label: "Asistencia de Personal en Campo", current: true },
         ]}
         extraContent={
-          <div className="flex items-center gap-3">
+          <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:items-center sm:gap-3">
             <button
               onClick={handleExport}
               disabled={Object.keys(matrixData).length === 0}
-              className="flex items-center gap-2 bg-white border border-zinc-200 rounded-xl px-3 py-1.5 text-xs font-bold text-zinc-600 hover:bg-zinc-50 hover:text-indigo-600 transition-all shadow-sm disabled:opacity-50"
+              className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-bold text-zinc-600 shadow-sm transition-all hover:bg-zinc-50 hover:text-indigo-600 disabled:opacity-50 sm:min-h-9 sm:py-1.5"
             >
               <FileDown size={14} />
               <span>Exportar</span>
             </button>
 
-            <div className="flex items-center bg-zinc-100 rounded-xl p-1 gap-1">
+            <div className="grid grid-cols-[44px_minmax(0,1fr)_44px] items-center gap-1 rounded-xl bg-zinc-100 p-1 sm:flex sm:w-auto">
             <button
               onClick={() => setSelectedDate(prev => subMonths(prev, 1))}
-              className="p-1.5 hover:bg-white hover:shadow-sm rounded-lg transition-all text-zinc-500"
+              aria-label="Mes anterior"
+              className="flex min-h-10 items-center justify-center rounded-lg p-2 text-zinc-500 transition-all hover:bg-white hover:shadow-sm sm:min-h-8 sm:p-1.5"
             >
               <ChevronLeft size={16} />
             </button>
-            <div className="px-4 text-sm font-bold text-zinc-700 min-w-[140px] text-center capitalize">
+            <div className="min-w-0 px-2 text-center text-sm font-bold capitalize text-zinc-700 sm:min-w-[140px] sm:px-4">
               {format(selectedDate, "MMMM yyyy", { locale: es })}
             </div>
             <button
               onClick={() => setSelectedDate(prev => addMonths(prev, 1))}
-              className="p-1.5 hover:bg-white hover:shadow-sm rounded-lg transition-all text-zinc-500"
+              aria-label="Mes siguiente"
+              className="flex min-h-10 items-center justify-center rounded-lg p-2 text-zinc-500 transition-all hover:bg-white hover:shadow-sm sm:min-h-8 sm:p-1.5"
             >
               <ChevronRight size={16} />
             </button>
@@ -165,37 +168,60 @@ export default function AttendanceMatrix() {
         }
       />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 rounded-xl border border-zinc-200 bg-white p-1 shadow-sm md:hidden">
+        <button
+          type="button"
+          onClick={() => setMobileTab("stats")}
+          className={`min-h-10 rounded-lg text-xs font-black uppercase tracking-wider transition-all ${
+            mobileTab === "stats" ? "bg-zinc-900 text-white shadow-sm" : "text-zinc-500"
+          }`}
+        >
+          Indicadores
+        </button>
+        <button
+          type="button"
+          onClick={() => setMobileTab("calendar")}
+          className={`min-h-10 rounded-lg text-xs font-black uppercase tracking-wider transition-all ${
+            mobileTab === "calendar" ? "bg-zinc-900 text-white shadow-sm" : "text-zinc-500"
+          }`}
+        >
+          Calendario
+        </button>
+      </div>
+
+      <div className={`${mobileTab === "stats" ? "grid" : "hidden"} grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 md:grid lg:grid-cols-4`}>
         <StatCard label="Total Trabajadores" value={data?.totalWorkers ?? 0} accent="#6366f1" icon={Users} sub="Personal asignado" />
         <StatCard label="Asistencias" value={stats.attendance} accent="#10b981" icon={CheckCircle2} sub={`${stats.total ? Math.round(stats.attendance / stats.total * 100) : 0}% efectividad`} />
         <StatCard label="Inasistencias" value={stats.absent} accent="#ef4444" icon={XCircle} sub="Faltas registradas" />
         <StatCard label="Tardanzas" value={stats.late} accent="#f59e0b" icon={Clock} sub="Fuera de horario" />
       </div>
 
-      <AttendanceFilters
-        opporId={opporId}
-        setOpporId={setOpporId}
-        workOrderId={workOrderId}
-        setWorkOrderId={setWorkOrderId}
-        squadId={squadId}
-        setSquadId={setSquadId}
-        search={search}
-        setSearch={setSearch}
-        projects={data?.projects}
-        workOrders={data?.workOrders}
-        squads={data?.squads}
-      />
+      <div className={`${mobileTab === "calendar" ? "block" : "hidden"} space-y-4 md:block md:space-y-6`}>
+        <AttendanceFilters
+          opporId={opporId}
+          setOpporId={setOpporId}
+          workOrderId={workOrderId}
+          setWorkOrderId={setWorkOrderId}
+          squadId={squadId}
+          setSquadId={setSquadId}
+          search={search}
+          setSearch={setSearch}
+          projects={data?.projects}
+          workOrders={data?.workOrders}
+          squads={data?.squads}
+        />
 
-      <AttendanceTable
-        days={days}
-        isLoading={isLoading}
-        matrixData={matrixData}
-        statusFilter={statusFilter}
-        setStatusFilter={setStatusFilter}
-        totalWorkers={data?.totalWorkers ?? 0}
-        setSelectedDetail={setSelectedDetail}
-        getStatusStyle={getStatusStyle}
-      />
+        <AttendanceTable
+          days={days}
+          isLoading={isLoading}
+          matrixData={matrixData}
+          statusFilter={statusFilter}
+          setStatusFilter={setStatusFilter}
+          totalWorkers={data?.totalWorkers ?? 0}
+          setSelectedDetail={setSelectedDetail}
+          getStatusStyle={getStatusStyle}
+        />
+      </div>
 
       <AttendanceDetailModal
         selectedDetail={selectedDetail}

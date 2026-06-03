@@ -16,7 +16,7 @@ import {
 import { DragDropContext } from "@hello-pangea/dnd";
 import type { DropResult } from "@hello-pangea/dnd";
 import { useQueryClient } from "@tanstack/react-query";
-import { useUpdateSquad, useOperationsWorkOrderProgressList, useWorkOrderActivitySelect } from "@/sharedKernel";
+import { useUpdateSquad, useOperationsWorkOrderProgressList, useWorkOrderActivityList } from "@/sharedKernel";
 import { useState, useMemo } from "react";
 import type { OperationsSquadResponseDto } from "@/application";
 
@@ -64,13 +64,6 @@ export function KanbanModal({
   );
   const allProgressData = progressData?.items || [];
 
-  const { data: activitiesData } = useWorkOrderActivitySelect(
-    selectedOrder?.operationsId ?? 0,
-    1,
-    5000,
-    "",
-  );
-  const allActivitiesData = activitiesData?.items || [];
 
   const handleDragEnd = async (result: DropResult) => {
     const { source, destination, draggableId } = result;
@@ -156,7 +149,7 @@ export function KanbanModal({
                             />
                           </div>
                           
-                          <WorkOrderActivitiesAccordion workOrderId={wo.workOrderId} allProgressData={allProgressData} allActivitiesData={allActivitiesData} />
+                          <WorkOrderActivitiesAccordion workOrderId={wo.workOrderId} allProgressData={allProgressData} />
                         </div>
                       </div>
                       <button
@@ -221,8 +214,16 @@ export function KanbanModal({
   );
 }
 
-const WorkOrderActivitiesAccordion = ({ workOrderId, allProgressData, allActivitiesData }: { workOrderId: number, allProgressData: any[], allActivitiesData: any[] }) => {
+const WorkOrderActivitiesAccordion = ({ workOrderId, allProgressData }: { workOrderId: number, allProgressData: any[] }) => {
   const [isOpen, setIsOpen] = useState(false);
+
+  const { data: activitiesData } = useWorkOrderActivityList(
+    workOrderId,
+    0,
+    5000,
+    ""
+  );
+  const allActivitiesData = activitiesData?.items || [];
 
   const activitiesMap = useMemo(() => {
     if (!allActivitiesData || allActivitiesData.length === 0) return new Map();

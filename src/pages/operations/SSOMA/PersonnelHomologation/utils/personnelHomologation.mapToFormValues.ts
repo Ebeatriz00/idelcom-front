@@ -72,6 +72,7 @@ export function mapToRequestDto(
         expirationDate: doc.expirationDate ?? "",
         reviewDate: doc.reviewDate ?? "",
         observation: doc.observation ?? "",
+        file: doc.file,
       })),
   };
 }

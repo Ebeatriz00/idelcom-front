@@ -20,7 +20,8 @@ export interface PersonnelHomologationBaseItem {
   fileReview?: string;
   issueDate?: string;
   observation?: string;
-  fileUrl: string;
+  fileUrl?: string;
+  fileUid?: string;
 }
 
 export interface PersonnelHomologationGeneralItem extends PersonnelHomologationBaseItem {}
@@ -50,6 +51,7 @@ export interface PersonnelOperationsItem {
     issueDate?: string;
     observation?: string;
     fileUrl: string;
+    fileUid?: string;
   }>;
   personnelHomologationOperationsItem: Array<{
     ssomaHomologationPersonnelDocumentId?: number;
@@ -67,6 +69,7 @@ export interface PersonnelOperationsItem {
     issueDate?: string;
     observation?: string;
     fileUrl: string;
+    fileUid?: string;
   }>;
   personnelHomologationSummaryItem: Array<{
     activeProject: number;

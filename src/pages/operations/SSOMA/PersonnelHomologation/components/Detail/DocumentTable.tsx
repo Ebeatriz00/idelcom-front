@@ -171,7 +171,7 @@ export function DocumentTable({
 
         <tbody className="divide-y divide-slate-100 bg-white">
           {documents.map((item, index) => {
-            const hasFile = Boolean(item.fileUrl?.trim());
+            const hasFile = Boolean(item.fileUid?.trim() || item.fileUrl?.trim());
             const key = getPersonnelHomologationRequirementItemKey(item, index);
             const isReplaceable = canReplace(item);
             const isSelected = selectedKeys.includes(key);

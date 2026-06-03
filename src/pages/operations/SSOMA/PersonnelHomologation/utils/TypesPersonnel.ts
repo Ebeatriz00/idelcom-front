@@ -50,6 +50,7 @@ export type UploadedFileValue = {
   fileName: string;
   fileUrl: string;
   filePath: string;
+  rawFile?: File;
 };
 export type PropsDocumentDropzone = {
   requirement?: PersonnelOperationsByWorkerItemDto | null;
@@ -75,6 +76,7 @@ export type PersonnelHomologationDocumentItem = Partial<PersonnelHomologationBas
   requeriment: string;
   fileName: string;
   fileUrl: string;
+  fileUid?: string;
   validationStatus: string;
   allowInternalReuse?: number;
   operationsRequirementId?: number;

@@ -29,6 +29,7 @@ export const homologationPersonnelDocumentSchema = z.object({
   expirationDate: z.string().trim().optional(),
   reviewDate: z.string().trim().optional(),
   observation: z.string().trim().optional(),
+  file: z.any().optional(),
 });
 
 export const createSchema = () =>

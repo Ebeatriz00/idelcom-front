@@ -372,6 +372,7 @@ export function PersonnelHomologationDocumentCard({
               setValue(`documents.${index}.fileUrl`, file.fileUrl, { shouldDirty: true, shouldValidate: true });
               setValue(`documents.${index}.filePath`, file.filePath, { shouldDirty: true, shouldValidate: true });
               setValue(`documents.${index}.localUploadToken`, `${Date.now()}`, { shouldDirty: true, shouldValidate: false });
+              setValue(`documents.${index}.file`, file.rawFile, { shouldDirty: true, shouldValidate: false });
               if (!currentIssueDate) {
                 setValue(`documents.${index}.issueDate`, todayDate, { shouldDirty: true, shouldValidate: true });
               }
@@ -381,6 +382,7 @@ export function PersonnelHomologationDocumentCard({
               setValue(`documents.${index}.fileUrl`, "", { shouldDirty: true, shouldValidate: true });
               setValue(`documents.${index}.filePath`, "", { shouldDirty: true, shouldValidate: true });
               setValue(`documents.${index}.localUploadToken`, "", { shouldDirty: true, shouldValidate: false });
+              setValue(`documents.${index}.file`, undefined, { shouldDirty: true, shouldValidate: false });
             }}
             onUseInternal={() => {
               if (!requirementConfig) return;

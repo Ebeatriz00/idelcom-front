@@ -17,6 +17,7 @@ export interface HomologationPersonnelDocumentUpsertDto {
   expirationDate: string;
   reviewDate: string;
   observation: string;
+  file?: File;
 }
 
 export interface HomologationPersonnelRequestDto {

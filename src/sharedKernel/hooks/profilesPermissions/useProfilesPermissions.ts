@@ -27,7 +27,9 @@ export const qkProfilesPermissions = {
   all: ["profilesPermissions"] as const,
 
   lists: (profilesId?: number | null) =>
-    [...qkProfilesPermissions.all, "list", profilesId ?? "none"] as const,
+    profilesId == null
+      ? ([...qkProfilesPermissions.all, "list"] as const)
+      : ([...qkProfilesPermissions.all, "list", profilesId] as const),
 
   list: (
     profilesId: number,

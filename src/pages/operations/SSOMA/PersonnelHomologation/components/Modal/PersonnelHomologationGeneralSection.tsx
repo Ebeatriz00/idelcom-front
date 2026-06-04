@@ -20,6 +20,7 @@ type Props = {
   isOperationScope: boolean;
   isScopeDisabled?: boolean;
   ssomaApproved?: boolean;
+  adminApproved?: boolean;
   register: UseFormRegister<PersonnelHomologationFormValues>;
   operationOptions: OptionItem[];
   operationOptionsLoading: boolean;
@@ -34,6 +35,7 @@ export function PersonnelHomologationGeneralSection({
   isOperationScope,
   isScopeDisabled = false,
   ssomaApproved,
+  adminApproved,
   register,
   operationOptions,
   operationOptionsLoading,
@@ -257,6 +259,28 @@ export function PersonnelHomologationGeneralSection({
                    <p className="text-xs font-bold text-slate-800">Aprobado por SSOMA</p>
                    <p className="mt-0.5 text-[11px] text-slate-500 leading-tight">
                       Confirmar validación técnica del personal.
+                   </p>
+                </label>
+              </div>
+
+              <div
+                className={[
+                  "group relative flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition-colors",
+                  adminApproved
+                    ? "border-blue-200 bg-blue-50/50"
+                    : "border-slate-100 bg-slate-50/30 hover:bg-slate-50",
+                ].join(" ")}
+              >
+                <input
+                  id="adminApproved"
+                  type="checkbox"
+                  className="mt-1 size-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                  {...register("homologationPersonnel.adminApproved")}
+                />
+                <label htmlFor="adminApproved" className="cursor-pointer select-none">
+                   <p className="text-xs font-bold text-slate-800">Aprobado por Administración</p>
+                   <p className="mt-0.5 text-[11px] text-slate-500 leading-tight">
+                      Confirmar validación administrativa del personal.
                    </p>
                 </label>
               </div>

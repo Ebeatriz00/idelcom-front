@@ -16,6 +16,7 @@ export const homologationPersonnelSchema = z.object({
   medicalAptitudeId: z.number().optional(),
   validFrom: requiredString(),
   ssomaApproved: z.boolean(),
+  adminApproved: z.boolean(),
   notes: z.string().trim().optional(),
 });
 

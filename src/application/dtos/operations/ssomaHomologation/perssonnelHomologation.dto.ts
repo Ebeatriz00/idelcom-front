@@ -5,6 +5,7 @@ export interface HomologationPersonnelUpsertDto {
   medicalAptitudeId: number;
   validFrom: string;
   ssomaApproved: boolean;
+  adminApproved: boolean;
   notes?: string;
 }
 
@@ -38,6 +39,7 @@ export interface SsomaHomologationPersonnelDocumentReplaceDto {
   reviewDate?: string;
   observation: string;
   replacementReason?: string;
+  file?: any;
 }
 
 export interface SsomaHomologationPersonnelDocumentReplaceRequestDto extends SsomaHomologationPersonnelDocumentReplaceDto {

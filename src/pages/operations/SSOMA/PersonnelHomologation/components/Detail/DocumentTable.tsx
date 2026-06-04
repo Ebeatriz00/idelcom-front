@@ -23,7 +23,7 @@ type Props = {
 
 function canReplace(item: PersonnelHomologationDocumentItem) {
   const normalized = (item.validationStatus ?? "").trim().toLowerCase();
-  const isReplaceableStatus = normalized === "vencido" || normalized === "por vencer" || normalized === "observado" || normalized === "faltante";
+  const isReplaceableStatus = normalized !== "pendiente";
   
   const hasDocumentId = Number(item.ssomaHomologationPersonnelDocumentId) > 0;
   const hasCompositeIds =

@@ -295,6 +295,14 @@ export function buildNavSectionsWithPerms(
 
   // 3) Asegura ancestros visibles (aunque no tengan permiso directo)
   const byId = new Map(allowedModules.map((m) => [m.modulesId, m]));
+  const childrenByParent = new Map<number, AllowedModule[]>();
+  for (const module of allowedModules) {
+    if (module.parentId == null) continue;
+    const children = childrenByParent.get(module.parentId) ?? [];
+    children.push(module);
+    childrenByParent.set(module.parentId, children);
+  }
+
   const visibleIds = new Set<number>(permitted.map((m) => m.modulesId));
 
   // Función recursiva para agregar ancestros
@@ -309,7 +317,20 @@ export function buildNavSectionsWithPerms(
   };
 
   // Agregar ancestros para todos los módulos permitidos
-  permitted.forEach((m) => addAncestors(m.modulesId));
+  const addDescendants = (moduleId: number) => {
+    const children = childrenByParent.get(moduleId) ?? [];
+    for (const child of children) {
+      visibleIds.add(child.modulesId);
+      addDescendants(child.modulesId);
+    }
+  };
+
+  permitted.forEach((m) => {
+    addAncestors(m.modulesId);
+    if (!m.path?.trim()) {
+      addDescendants(m.modulesId);
+    }
+  });
 
   // 4) Conjunto final visible
   const visible = Array.from(visibleIds).map((id) => byId.get(id)!);

@@ -310,11 +310,22 @@ export function WorkOrderProgressModal({
         },
       ];
 
-      const activitySummaryMap = new Map<number, any>();
+      const summariesByActivity = new Map<number, any[]>();
+      
       detailsData.forEach((item) => {
-        if (!activitySummaryMap.has(item.activityId)) {
-          activitySummaryMap.set(item.activityId, {
-            activityName: item.activityName,
+        const pId = item.activityId;
+        if (!summariesByActivity.has(pId)) {
+          summariesByActivity.set(pId, []);
+        }
+
+        const list = summariesByActivity.get(pId)!;
+        const realId = item.subActivityId || item.activityId;
+        const realName = item.subActivityName || item.activityName;
+
+        if (!list.find((x: any) => x.realId === realId)) {
+          list.push({
+            realId,
+            realName,
             progressPercentage: item.activityProgressPercentage || 0,
             targetQuantity: item.targetQuantity || 0,
             currentQuantity: item.currentQuantity || 0,
@@ -323,12 +334,18 @@ export function WorkOrderProgressModal({
         }
       });
 
-      const activitySummaryData = Array.from(activitySummaryMap.values());
+      const dynamicSummaryTables: any[] = [
+        {
+          title: "Resumen de Órdenes de Trabajo",
+          columns: summaryTableColumns,
+          data: summaryData,
+        },
+      ];
 
       const activitySummaryTableColumns: ColumnSpec<any>[] = [
         {
-          label: "Actividad",
-          value: (r) => r.activityName || "Desconocida",
+          label: "Actividad / Subactividad",
+          value: (r) => r.realName || "Desconocida",
           width: 40,
         },
         { label: "Unidad", value: (r) => r.measurementUnitSymbol || "", width: 15 },
@@ -341,6 +358,18 @@ export function WorkOrderProgressModal({
         },
       ];
 
+      summariesByActivity.forEach((subActivities, pId) => {
+        const parentReport = detailsData.find((d: any) => d.activityId === pId);
+        const parentName = parentReport?.activityName || "Actividad";
+        const woCode = parentReport?.workOrderCode || "";
+
+        dynamicSummaryTables.push({
+          title: `Resumen de Actividad: ${woCode} - ${parentName}`,
+          columns: activitySummaryTableColumns,
+          data: subActivities,
+        });
+      });
+
       const rawColumns: ColumnSpec<any>[] = [
         {
           label: "Fecha",
@@ -348,9 +377,9 @@ export function WorkOrderProgressModal({
           width: 15,
         },
         {
-          label: "Actividad",
-          value: (r) => r.activityName || "Desconocida",
-          width: 35,
+          label: "Actividad / Subactividad",
+          value: (r) => r.subActivityName ? r.subActivityName : (r.activityName || "Desconocida"),
+          width: 45,
         },
         {
           label: "Unidad",
@@ -385,18 +414,7 @@ export function WorkOrderProgressModal({
         title: "Historial de Reportes de Avance",
         sheetName: "Historial",
         headerInfo,
-        summaryTables: [
-          {
-            title: "Resumen de Órdenes de Trabajo",
-            columns: summaryTableColumns,
-            data: summaryData,
-          },
-          {
-            title: "Resumen de Progreso de Actividades",
-            columns: activitySummaryTableColumns,
-            data: activitySummaryData,
-          },
-        ],
+        summaryTables: dynamicSummaryTables,
       });
     } catch (error) {
       console.error("Error al exportar Excel:", error);

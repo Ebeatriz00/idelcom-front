@@ -20,6 +20,10 @@ export interface OperationsWorkOrderProgressDetailDto {
   currentQuantity: number | null;
   measurementUnitSymbol: string | null;
   activityProgressPercentage: number | null;
+  workOrderId?: number;
+  workOrderCode?: string | null;
+  subActivityId?: number | null;
+  subActivityName?: string | null;
 }
 
 export interface OperationsWorkOrderProgressReportResponseDto {

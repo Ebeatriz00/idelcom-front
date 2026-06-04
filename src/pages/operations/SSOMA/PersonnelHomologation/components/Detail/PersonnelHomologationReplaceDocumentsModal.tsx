@@ -3,10 +3,8 @@ import { Modal, ProgressBar, useModalHistoryLock } from "@/layouts";
 import {
   ensureFolderLocalPath,
   listLocalFiles,
-  localFileUrl,
   showApiError,
   showLoading,
-  uploadToLocalDrive,
   useByPersonnelHomologationList,
   useReplaceSsomaHomologationPersonnelDocument,
 } from "@/sharedKernel";
@@ -37,6 +35,7 @@ type ReplacementDraft = SsomaHomologationPersonnelDocumentReplaceDto & {
   requirementName: string;
   operationName?: string;
   originalItem: PersonnelHomologationRequirementItem;
+  file?: File;
 };
 
 type ReplacementDraftValue = ReplacementDraft[keyof ReplacementDraft];
@@ -726,7 +725,7 @@ export function PersonnelHomologationReplaceDocumentsModal({
     if (!file) return;
 
     setUploadingKey(draft.key);
-    setProgressByKey((current) => ({ ...current, [draft.key]: 0 }));
+    setProgressByKey((current) => ({ ...current, [draft.key]: 100 }));
 
     try {
       const year = new Date().getFullYear().toString();
@@ -752,27 +751,17 @@ export function PersonnelHomologationReplaceDocumentsModal({
       );
       const renamedFile = new File([file], newFileName, { type: file.type });
 
-      const res = await uploadToLocalDrive(
-        renamedFile,
-        { segments },
-        {
-          strategy: "timestamp",
-          name: newFileName,
-          onProgress: (percent) =>
-            setProgressByKey((current) => ({
-              ...current,
-              [draft.key]: percent,
-            })),
-        },
-      );
-
-      updateDraftValue(draft.key, "fileName", res.fileName || newFileName);
-      updateDraftValue(draft.key, "filePath", res.relativePath);
-      updateDraftValue(draft.key, "fileUrl", localFileUrl(res.relativePath));
+      updateDraftValue(draft.key, "file", renamedFile);
+      updateDraftValue(draft.key, "fileName", newFileName);
+      updateDraftValue(draft.key, "filePath", "");
+      updateDraftValue(draft.key, "fileUrl", URL.createObjectURL(renamedFile));
     } catch (err) {
-      await showApiError(err, "No se pudo subir el archivo.");
+      await showApiError(err, "Error al preparar el archivo.");
     } finally {
-      setUploadingKey("");
+      setTimeout(() => {
+        setUploadingKey("");
+        setProgressByKey((current) => ({ ...current, [draft.key]: 0 }));
+      }, 300);
     }
   };
 
@@ -797,8 +786,9 @@ export function PersonnelHomologationReplaceDocumentsModal({
               homologationPersonnelId: drafts[0].homologationPersonnelId,
               requirementId: drafts[0].requirementId,
               fileName: drafts[0].fileName,
-              fileUrl: drafts[0].fileUrl,
-              filePath: drafts[0].filePath,
+              fileUrl: "",
+              filePath: "",
+              file: drafts[0].file,
               issueDate: drafts[0].issueDate,
               expirationDate: drafts[0].expirationDate,
               validationStatusId: drafts[0].validationStatusId,
@@ -808,7 +798,21 @@ export function PersonnelHomologationReplaceDocumentsModal({
             }
           : {
               ...drafts[0],
-              documents: drafts,
+              documents: drafts.map((draft) => ({
+                ssomaHomologationPersonnelDocumentId: draft.ssomaHomologationPersonnelDocumentId,
+                homologationPersonnelId: draft.homologationPersonnelId,
+                requirementId: draft.requirementId,
+                fileName: draft.fileName,
+                fileUrl: "",
+                filePath: "",
+                file: draft.file,
+                issueDate: draft.issueDate,
+                expirationDate: draft.expirationDate,
+                validationStatusId: draft.validationStatusId,
+                reviewDate: draft.reviewDate,
+                observation: draft.observation,
+                replacementReason: draft.replacementReason,
+              })),
             },
       );
       onClose();

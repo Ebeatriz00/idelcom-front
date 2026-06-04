@@ -68,6 +68,15 @@ export default function ProfilesPermissions() {
   const [, setVisibleCount] = useState(0);
   const { createMut, statusMut } = useProfilesPermissionsMutations();
 
+  async function invalidateProfilePermissionCaches(profileId: number) {
+    await fetchAuthInvalidateBootstrap(profileId);
+    await qc.invalidateQueries({
+      queryKey: ["auth", "bootstrap"],
+      exact: false,
+      refetchType: "active",
+    });
+  }
+
   async function handleAssign(modulesPermissionsId: number[]) {
     if (selectedId == null) return;
 
@@ -86,7 +95,7 @@ export default function ProfilesPermissions() {
         ),
       });
 
-      await fetchAuthInvalidateBootstrap(Number(selectedId));
+      await invalidateProfilePermissionCaches(Number(selectedId));
       setOpenAssign(false);
     } catch (error) {
       console.error("Error asignando permisos:", error);
@@ -112,7 +121,7 @@ export default function ProfilesPermissions() {
             debouncedSearch,
           ),
         });
-        await fetchAuthInvalidateBootstrap(selectedId);
+        await invalidateProfilePermissionCaches(selectedId);
       }
     } catch (error) {
       console.error("Error cambiando estado:", error);

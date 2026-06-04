@@ -18,6 +18,7 @@ export function mapToFormValues(
       medicalAptitudeId: data?.homologationPersonnel?.medicalAptitudeId,
       validFrom: data?.homologationPersonnel?.validFrom ?? "",
       ssomaApproved: data?.homologationPersonnel?.ssomaApproved ?? false,
+      adminApproved: data?.homologationPersonnel?.adminApproved ?? false,
       notes: data?.homologationPersonnel?.notes ?? "",
     },
     documents: (data?.documents ?? [])
@@ -53,6 +54,7 @@ export function mapToRequestDto(
       medicalAptitudeId: homologationPersonnel.medicalAptitudeId ?? 0,
       validFrom: homologationPersonnel.validFrom,
       ssomaApproved: homologationPersonnel.ssomaApproved,
+      adminApproved: homologationPersonnel.adminApproved,
       notes: homologationPersonnel.notes,
     },
     documents: (values.documents ?? [])
@@ -72,6 +74,7 @@ export function mapToRequestDto(
         expirationDate: doc.expirationDate ?? "",
         reviewDate: doc.reviewDate ?? "",
         observation: doc.observation ?? "",
+        file: doc.file,
       })),
   };
 }

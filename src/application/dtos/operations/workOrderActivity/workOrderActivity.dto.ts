@@ -36,4 +36,6 @@ export interface OperationsWorkOrderActivityUpdateDto {
 export interface OperationsWorkOrderActivitySelectItem {
   activityId: number;
   activityName: string;
+  parentActivityId?: number;
+  workOrderId?: number;
 }

@@ -22,4 +22,9 @@ export interface   OperationsWorkOrderProgressResponseDto {
   updateDate?: string;
   status?: string;
   photos?: OperationsWorkOrderProgressPhotoDto[];
+  workOrderId?: number;
+  workOrderCode?: string;
+  subActivityId?: number;
+  subActivityName?: string;
+  measurementUnitSymbol?: string;
 }

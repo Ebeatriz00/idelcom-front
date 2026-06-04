@@ -77,14 +77,36 @@ export async function fetchSelectOperationsForHomologation(
   return unwrap<PagedSelect<OptionItem>>(data);
 }
 
+function appendFormData(formData: FormData, data: any, parentKey: string = '') {
+  if (data === null || data === undefined) return;
+  if (data instanceof Date) {
+    formData.append(parentKey, data.toISOString());
+  } else if (data instanceof File || data instanceof Blob) {
+    formData.append(parentKey, data);
+  } else if (Array.isArray(data)) {
+    data.forEach((item, index) => {
+      appendFormData(formData, item, `${parentKey}[${index}]`);
+    });
+  } else if (typeof data === 'object') {
+    Object.keys(data).forEach(key => {
+      const fieldKey = parentKey ? `${parentKey}.${key}` : key;
+      appendFormData(formData, data[key], fieldKey);
+    });
+  } else {
+    formData.append(parentKey, String(data));
+  }
+}
+
 export async function fetchPersonnelHomologationCreate(
   dto: HomologationPersonnelRequestDto,
 ): Promise<GlobalResponse> {
+  const formData = new FormData();
+  appendFormData(formData, dto);
+
   const { data } = await http.post<GlobalResponse>(
     "/SsomaHomologationPersonnel/CreateSsomaHomologationPersonnelOrchestrated",
-    {
-      ...dto,
-    },
+    formData,
+    { headers: { "Content-Type": "multipart/form-data" } }
   );
   return data;
 }
@@ -94,11 +116,13 @@ export async function fetchReplaceSsomaHomologationPersonnelDocument(
     | SsomaHomologationPersonnelDocumentReplaceDto
     | SsomaHomologationPersonnelDocumentReplaceRequestDto,
 ): Promise<GlobalResponse> {
+  const formData = new FormData();
+  appendFormData(formData, dto);
+
   const { data } = await http.put<GlobalResponse>(
     "/SsomaHomologationPersonnelDocument/ReplaceSsomaHomologationPersonnelDocument",
-    {
-      ...dto,
-    },
+    formData,
+    { headers: { "Content-Type": "multipart/form-data" } }
   );
   return data;
 }

@@ -4,6 +4,7 @@ import { SearchSelect } from "@/layouts/components/ui/search-select/searchSelect
 import {
   cn,
   useActivityComplexityOptions,
+  useCloneWorkOrderActivity,
   useCreateWorkOrderActivity,
   useCreateWorkOrderResponsible,
   useDeleteWorkOrderActivity,
@@ -26,9 +27,11 @@ import {
   Star,
   Trash2,
   Users,
+  Copy,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
+import Swal from "sweetalert2";
 import * as z from "zod";
 
 const schema = z.object({
@@ -266,6 +269,9 @@ export function WorkOrderModal({
   const [expandedActivityId, setExpandedActivityId] = useState<number | null>(
     null,
   );
+  const [cloningParentId, setCloningParentId] = useState<number | null>(null);
+  const [cloneQuantity, setCloneQuantity] = useState<string>("1");
+  const [selectedActivities, setSelectedActivities] = useState<number[]>([]);
 
   const {
     register,
@@ -283,7 +289,8 @@ export function WorkOrderModal({
   const { mutateAsync: createActivity, isPending: creatingActivity } =
     useCreateWorkOrderActivity();
   const { mutateAsync: updateActivity } = useUpdateWorkOrderActivity();
-  const { mutateAsync: deleteActivity } = useDeleteWorkOrderActivity();
+  const { mutateAsync: deleteActivity, isPending: isDeletingActivity } = useDeleteWorkOrderActivity();
+  const { mutateAsync: cloneActivity, isPending: isCloning } = useCloneWorkOrderActivity();
 
   const {
     register: registerAct,
@@ -329,6 +336,7 @@ export function WorkOrderModal({
       setExpandedActivityId(null);
       setWorkerOption(null);
       setEditingActivityId(null);
+      setSelectedActivities([]);
       if (initialData) {
         reset({
           workOrderCode: initialData.workOrderCode || "",
@@ -414,7 +422,21 @@ export function WorkOrderModal({
 
   const onDeleteActivity = async (activityId: number) => {
     if (!initialData?.workOrderId) return;
-    await deleteActivity(activityId);
+    
+    const result = await Swal.fire({
+      title: "¿Estás seguro?",
+      text: "Se eliminará esta actividad y sus sub-actividades. Esta acción no se puede deshacer.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#EF4444",
+      cancelButtonColor: "#64748B",
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar"
+    });
+
+    if (result.isConfirmed) {
+      await deleteActivity([activityId]);
+    }
   };
 
   const onAddResponsible = async (data: ResponsibleFormValues) => {
@@ -429,6 +451,53 @@ export function WorkOrderModal({
         isMain: false,
       });
       setWorkerOption(null);
+    }
+  };
+
+  const onCloneActivity = async (activityId: number) => {
+    const qty = parseInt(cloneQuantity);
+    if (isNaN(qty) || qty <= 0) return;
+    await cloneActivity({ activityId, quantity: qty });
+    setCloningParentId(null);
+    setCloneQuantity("1");
+  };
+
+  const onDeleteBulkActivity = async () => {
+    if (!selectedActivities.length) return;
+
+    const result = await Swal.fire({
+      title: "¿Estás seguro?",
+      text: `Se eliminarán ${selectedActivities.length} actividad(es) y sus sub-actividades. Esta acción no se puede deshacer.`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#EF4444",
+      cancelButtonColor: "#64748B",
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar"
+    });
+
+    if (result.isConfirmed) {
+      const resp = await deleteActivity(selectedActivities);
+      if (resp.status === 1) {
+        setSelectedActivities([]);
+      }
+    }
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      const allParentIds = groupedActivities.map(g => g.parent.activityId);
+      setSelectedActivities(allParentIds);
+    } else {
+      setSelectedActivities([]);
+    }
+  };
+
+  const handleSelectActivity = (activityId: number, checked: boolean) => {
+    if (checked) {
+      setSelectedActivities(prev => [...prev, activityId]);
+    } else {
+      setSelectedActivities(prev => prev.filter(id => id !== activityId));
     }
   };
 
@@ -640,10 +709,21 @@ export function WorkOrderModal({
 
               {activeTab === "activities" && (
                 <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-col gap-6">
-                  <header>
+                  <header className="flex items-center justify-between">
                     <h3 className="text-xl font-black text-slate-900 tracking-tight uppercase">
                       Plan de Tareas
                     </h3>
+                    {selectedActivities.length > 0 && (
+                      <Button
+                        type="button"
+                        onClick={onDeleteBulkActivity}
+                        disabled={isDeletingActivity}
+                        className="h-8 rounded-lg bg-red-500 px-4 text-[10px] font-black uppercase tracking-widest text-white transition-all hover:bg-red-600 shadow-sm"
+                      >
+                        {isDeletingActivity ? <Loader2 className="size-3 animate-spin mr-1.5 inline-block" /> : <Trash2 className="size-3 mr-1.5 inline-block" />}
+                        Eliminar ({selectedActivities.length})
+                      </Button>
+                    )}
                   </header>
 
                   <form
@@ -746,11 +826,29 @@ export function WorkOrderModal({
                         </p>
                       </div>
                     ) : groupedActivities.length ? (
-                      groupedActivities.map(({ parent, children }) => (
-                        <div key={parent.activityId} className="space-y-2">
-                          <div className="group flex flex-col gap-3 rounded-2xl border border-slate-100 bg-white p-3 transition-all hover:border-blue-100 sm:flex-row sm:items-center">
-                            <div className="flex min-w-0 flex-1 items-center gap-3">
-                              <button
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-3 px-3 py-2 bg-slate-50/80 rounded-xl border border-slate-100">
+                          <input
+                            type="checkbox"
+                            checked={selectedActivities.length > 0 && selectedActivities.length === groupedActivities.length}
+                            onChange={(e) => handleSelectAll(e.target.checked)}
+                            className="size-4 rounded border-slate-300 text-[#1A3673] focus:ring-[#1A3673] cursor-pointer"
+                          />
+                          <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+                            Seleccionar Todas
+                          </span>
+                        </div>
+                        {groupedActivities.map(({ parent, children }) => (
+                          <div key={parent.activityId} className="space-y-2">
+                            <div className="group flex flex-col gap-3 rounded-2xl border border-slate-100 bg-white p-3 transition-all hover:border-blue-100 sm:flex-row sm:items-center">
+                              <div className="flex min-w-0 flex-1 items-center gap-3">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedActivities.includes(parent.activityId)}
+                                  onChange={(e) => handleSelectActivity(parent.activityId, e.target.checked)}
+                                  className="size-4 rounded border-slate-300 text-[#1A3673] focus:ring-[#1A3673] cursor-pointer"
+                                />
+                                <button
                                 type="button"
                                 onClick={() =>
                                   setExpandedActivityId((current) =>
@@ -900,6 +998,54 @@ export function WorkOrderModal({
                                     strokeWidth={2.5}
                                   />
                                 </Button>
+                                {cloningParentId === parent.activityId ? (
+                                  <div className="flex items-center gap-1.5 bg-blue-50/50 px-1 py-1 rounded border border-blue-100/50">
+                                    <input
+                                      type="text"
+                                      value={cloneQuantity}
+                                      onChange={(e) => setCloneQuantity(e.target.value.replace(/[^0-9]/g, ""))}
+                                      onKeyDown={(e) => {
+                                        if (e.key === "Enter") {
+                                          e.preventDefault();
+                                          onCloneActivity(parent.activityId);
+                                        }
+                                      }}
+                                      className="h-[22px] w-8 text-center text-[10px] font-black text-blue-600 bg-white rounded-sm border border-blue-200 outline-none"
+                                      placeholder="N°"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => onCloneActivity(parent.activityId)}
+                                      disabled={isCloning}
+                                      className="flex h-[22px] items-center justify-center gap-1 rounded bg-[#1A3673] px-2 text-[8px] font-black uppercase tracking-widest text-white transition-all hover:bg-[#132856] disabled:opacity-50 shadow-sm"
+                                    >
+                                      {isCloning && <Loader2 className="size-2.5 animate-spin" />}
+                                      Confirmar
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => setCloningParentId(null)}
+                                      className="flex h-[22px] w-[22px] items-center justify-center rounded bg-white border border-slate-200 text-slate-400 transition-all hover:bg-rose-50 hover:text-rose-500 hover:border-rose-200 shadow-sm"
+                                      title="Cancelar"
+                                    >
+                                      <Trash2 className="size-3" />
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => {
+                                      setCloningParentId(parent.activityId);
+                                      setCloneQuantity("1");
+                                    }}
+                                    className="flex size-8 items-center justify-center rounded-lg text-blue-600 transition-all hover:bg-blue-50 hover:text-blue-700"
+                                    title="Clonar actividad"
+                                  >
+                                    <Copy className="size-3.5" />
+                                  </Button>
+                                )}
                                 <Button
                                   variant="ghost"
                                   size="icon"
@@ -999,7 +1145,8 @@ export function WorkOrderModal({
                               </div>
                             )}
                         </div>
-                      ))
+                      ))}
+                      </div>
                     ) : (
                       <div className="py-12 flex flex-col items-center justify-center gap-3 bg-slate-50/50 rounded-3xl border border-dashed border-slate-100">
                         <ListChecks className="size-6 text-slate-200" />

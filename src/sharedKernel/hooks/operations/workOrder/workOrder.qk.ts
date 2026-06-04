@@ -7,4 +7,7 @@ export const qkWorkOrder = {
   detail: (id: number) => [...qkWorkOrder.details(), id] as const,
   progressReports: () => [...qkWorkOrder.all, "progressReport"] as const,
   progressReport: (operationsId: number) => [...qkWorkOrder.progressReports(), operationsId] as const,
+  selects: () => [...qkWorkOrder.all, "select"] as const,
+  select: (operationsId: number, page: number, pageSize: number, search: string) =>
+    [...qkWorkOrder.selects(), { operationsId, page, pageSize, search }] as const,
 };

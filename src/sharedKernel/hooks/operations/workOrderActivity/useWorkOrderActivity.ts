@@ -1,4 +1,5 @@
 import {
+  cloneOperationsWorkOrderActivity,
   createOperationsWorkOrderActivity,
   deleteOperationsWorkOrderActivity,
   fetchOperationsWorkOrderActivityList,
@@ -94,14 +95,33 @@ export function useUpdateWorkOrderActivity() {
 export function useDeleteWorkOrderActivity() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (activityId: number) => {
-      showLoading("Eliminando actividad...");
-      return deleteOperationsWorkOrderActivity(activityId);
+    mutationFn: (activityIds: number[]) => {
+      showLoading("Eliminando actividad(es)...");
+      return deleteOperationsWorkOrderActivity(activityIds);
     },
     onSuccess: (resp) => {
       if (resp.status === 1) {
         queryClient.invalidateQueries({ queryKey: qkWorkOrderActivity.all });
-        showSuccess(resp.message || "Actividad eliminada correctamente");
+        showSuccess(resp.message || "Actividades eliminadas correctamente");
+      } else {
+        showApiError(resp.message);
+      }
+    },
+    onError: (err) => showApiError(err),
+  });
+}
+
+export function useCloneWorkOrderActivity() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ activityId, quantity }: { activityId: number; quantity: number }) => {
+      showLoading("Clonando actividad...");
+      return cloneOperationsWorkOrderActivity(activityId, quantity);
+    },
+    onSuccess: (resp) => {
+      if (resp.status === 1) {
+        queryClient.invalidateQueries({ queryKey: qkWorkOrderActivity.all });
+        showSuccess(resp.message || "Actividad clonada correctamente");
       } else {
         showApiError(resp.message);
       }

@@ -43,11 +43,11 @@ export const AttendanceFilters = ({
   const selectedSquad = squadOptions.find(o => o.value === squadId) || null;
 
   return (
-    <div className="bg-white border border-zinc-200 rounded-2xl p-6 mb-8 shadow-sm">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm sm:p-5 lg:p-6">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
         {/* Buscar trabajador */}
         <div className="space-y-2">
-          <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest ml-1">Buscar Trabajador</label>
+          <label className="ml-1 block text-[10px] font-bold uppercase tracking-widest text-zinc-400">Buscar Trabajador</label>
           <div className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={16} />
             <input
@@ -55,14 +55,14 @@ export const AttendanceFilters = ({
               placeholder="Nombre o documento..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="w-full bg-zinc-50 border border-zinc-200 hover:border-zinc-300 rounded-xl pl-11 pr-4 py-2 text-xs focus:bg-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all h-[38px] placeholder:text-zinc-400 font-medium"
+              className="h-11 w-full rounded-xl border border-zinc-200 bg-zinc-50 py-2 pl-11 pr-4 text-sm font-medium outline-none transition-all placeholder:text-zinc-400 hover:border-zinc-300 focus:border-indigo-500 focus:bg-white focus:ring-1 focus:ring-indigo-500 sm:h-[38px] sm:text-xs"
             />
           </div>
         </div>
 
         {/* Proyecto */}
         <div className="space-y-2">
-          <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest ml-1">Proyecto</label>
+          <label className="ml-1 block text-[10px] font-bold uppercase tracking-widest text-zinc-400">Proyecto</label>
           <SearchSelect
             placeholder="Seleccionar proyecto..."
             value={selectedProject}
@@ -83,7 +83,7 @@ export const AttendanceFilters = ({
 
         {/* Orden de Trabajo */}
         <div className="space-y-2">
-          <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest ml-1">Orden de Trabajo</label>
+          <label className="ml-1 block text-[10px] font-bold uppercase tracking-widest text-zinc-400">Orden de Trabajo</label>
           <SearchSelect
             placeholder="Seleccionar OT..."
             disabled={!opporId}
@@ -104,7 +104,7 @@ export const AttendanceFilters = ({
 
         {/* Cuadrilla */}
         <div className="space-y-2">
-          <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest ml-1">Cuadrilla</label>
+          <label className="ml-1 block text-[10px] font-bold uppercase tracking-widest text-zinc-400">Cuadrilla</label>
           <SearchSelect
             placeholder="Seleccionar cuadrilla..."
             disabled={!workOrderId}

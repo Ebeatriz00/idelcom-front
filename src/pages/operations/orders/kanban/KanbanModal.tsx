@@ -9,11 +9,15 @@ import {
   ChevronRight,
   ChevronLeft,
   PencilLine,
+  ChevronDown,
+  ChevronUp,
+  Activity,
 } from "lucide-react";
 import { DragDropContext } from "@hello-pangea/dnd";
 import type { DropResult } from "@hello-pangea/dnd";
 import { useQueryClient } from "@tanstack/react-query";
-import { useUpdateSquad } from "@/sharedKernel";
+import { useUpdateSquad, useOperationsWorkOrderProgressList, useWorkOrderActivityList } from "@/sharedKernel";
+import { useState, useMemo } from "react";
 import type { OperationsSquadResponseDto } from "@/application";
 
 type Props = {
@@ -49,6 +53,17 @@ export function KanbanModal({
 }: Props) {
   const queryClient = useQueryClient();
   const { mutateAsync: updateSquad } = useUpdateSquad();
+
+  const { data: progressData } = useOperationsWorkOrderProgressList(
+    1,
+    5000,
+    undefined,
+    "",
+    undefined,
+    selectedOrder?.operationsId ?? 0,
+  );
+  const allProgressData = progressData?.items || [];
+
 
   const handleDragEnd = async (result: DropResult) => {
     const { source, destination, draggableId } = result;
@@ -133,6 +148,8 @@ export function KanbanModal({
                               style={{ width: `${wo.progressPercentage ?? 0}%` }}
                             />
                           </div>
+                          
+                          <WorkOrderActivitiesAccordion workOrderId={wo.workOrderId} allProgressData={allProgressData} />
                         </div>
                       </div>
                       <button
@@ -194,5 +211,175 @@ export function KanbanModal({
         </AsyncState>
       </div>
     </Modal>
+  );
+}
+
+const WorkOrderActivitiesAccordion = ({ workOrderId, allProgressData }: { workOrderId: number, allProgressData: any[] }) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const { data: activitiesData } = useWorkOrderActivityList(
+    workOrderId,
+    0,
+    5000,
+    ""
+  );
+  const allActivitiesData = activitiesData?.items || [];
+
+  const activitiesMap = useMemo(() => {
+    if (!allActivitiesData || allActivitiesData.length === 0) return new Map();
+    const map = new Map<number, any>();
+    
+    // Filtramos las actividades base para esta WorkOrder
+    const woActivities = allActivitiesData.filter(a => a.workOrderId === workOrderId);
+    const woReports = allProgressData ? allProgressData.filter(r => r.workOrderId === workOrderId) : [];
+
+    // Ordenar los reportes del más antiguo al más reciente
+    const sortedReports = [...woReports].sort((a, b) => 
+      new Date(a.reportedDate).getTime() - new Date(b.reportedDate).getTime()
+    );
+
+    // 1. Construir la estructura base de actividades desde el maestro (incluye todo, tenga o no progreso)
+    woActivities.forEach(act => {
+      if (!act.parentActivityId) {
+        if (!map.has(act.activityId)) {
+          map.set(act.activityId, {
+            id: act.activityId,
+            name: act.activityName,
+            percentage: act.progressPercentage || 0,
+            currentQty: act.currentQuantity || 0,
+            targetQty: act.targetQuantity || 0,
+            subActivities: new Map<number, any>()
+          });
+        }
+      }
+    });
+
+    // 2. Construir la estructura base de subactividades
+    woActivities.forEach(act => {
+      if (act.parentActivityId) {
+        const parent = map.get(act.parentActivityId);
+        if (parent) {
+          parent.subActivities.set(act.activityId, {
+            id: act.activityId,
+            name: act.activityName,
+            percentage: act.progressPercentage || 0,
+            currentQty: act.currentQuantity || 0,
+            targetQty: act.targetQuantity || 0
+          });
+        }
+      }
+    });
+
+    // 3. Superponer los últimos reportes para mayor precisión en tiempo real
+    sortedReports.forEach(item => {
+      const parent = map.get(item.activityId);
+      if (!parent) return;
+
+      // Extraemos el porcentaje de la actividad padre que viene del back
+      if (item.activityProgressPercentage !== undefined && item.activityProgressPercentage !== null) {
+        parent.percentage = item.activityProgressPercentage;
+      }
+
+      if (!item.subActivityId) {
+        parent.currentQty = item.currentQuantity || 0;
+        parent.targetQty = item.targetQuantity || parent.targetQty;
+        // Si el reporte es directo al padre y no tiene activityProgressPercentage, calculamos como respaldo
+        if ((item.activityProgressPercentage === undefined || item.activityProgressPercentage === null) && parent.targetQty > 0) {
+          parent.percentage = Math.min(100, Math.round((Number(parent.currentQty) / parent.targetQty) * 100));
+        }
+      } else {
+        const sub = parent.subActivities.get(item.subActivityId);
+        if (sub) {
+          sub.currentQty = item.currentQuantity || 0;
+          sub.targetQty = item.targetQuantity || sub.targetQty;
+          sub.percentage = sub.targetQty ? Math.min(100, Math.round((Number(sub.currentQty) / sub.targetQty) * 100)) : 0;
+        }
+      }
+    });
+
+    // 4. Calcular el progreso del padre en base a sus hijos, contando TODOS sus hijos reales.
+    map.forEach(act => {
+      const subs = Array.from((act.subActivities as Map<number, any>).values());
+      if (subs.length > 0) {
+        const completedSubs = subs.filter((s: any) => s.percentage >= 100).length;
+        act.isCalculatedBySubs = true;
+        act.completedSubs = completedSubs;
+        act.totalSubs = subs.length; // Aquí ya están contadas las subactividades en cero
+      } else {
+        act.isCalculatedBySubs = false;
+      }
+    });
+
+    return map;
+  }, [allProgressData, allActivitiesData, workOrderId]);
+
+  const formatQty = (q: number) => q % 1 === 0 ? q : Number(q).toFixed(1);
+
+  const activities = Array.from(activitiesMap.values());
+  if (activities.length === 0) return null;
+
+  return (
+    <div className="mt-2 w-full">
+      <button 
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex w-full items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-slate-600 transition-all hover:bg-slate-100"
+      >
+        <span className="flex items-center gap-1.5"><Activity className="size-3" /> Ver detalles de avance ({activities.length})</span>
+        {isOpen ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
+      </button>
+      
+      {isOpen && (
+        <div className="mt-1 flex flex-col gap-1.5 rounded-lg border border-slate-200 bg-white p-2 shadow-inner">
+          {activities.map(act => {
+            const subs = Array.from((act.subActivities as Map<number, any>).values());
+            return (
+              <div key={act.id} className="flex flex-col gap-1">
+                <div className="flex flex-col justify-center rounded bg-slate-50 px-2.5 py-2 border border-slate-100">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-[9.5px] font-bold text-slate-700 truncate mr-2" title={act.name}>{act.name}</span>
+                    <span className="shrink-0 text-[9px] font-black text-[#1A3673]">
+                      {act.percentage >= 100 
+                        ? `COMPLETO${act.isCalculatedBySubs ? ` (${act.totalSubs}/${act.totalSubs})` : act.targetQty > 0 ? ` (${formatQty(act.targetQty)}/${formatQty(act.targetQty)})` : ''}` 
+                        : act.isCalculatedBySubs 
+                          ? `${act.completedSubs}/${act.totalSubs} - ${act.percentage}%`
+                          : act.targetQty > 0 
+                            ? `${formatQty(act.currentQty)}/${formatQty(act.targetQty)} - ${act.percentage}%`
+                            : `${act.percentage}%`}
+                    </span>
+                  </div>
+                  <div className="h-1 w-full bg-slate-200 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-[#1A3673] rounded-full transition-all duration-700"
+                      style={{ width: `${act.percentage}%` }}
+                    />
+                  </div>
+                </div>
+                {subs.map((sub: any) => (
+                  <div key={sub.id} className="ml-4 flex flex-col justify-center rounded border border-slate-100 bg-white px-2.5 py-1.5">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-[8.5px] font-semibold text-slate-500 truncate mr-2" title={sub.name}>└ {sub.name}</span>
+                      <span className="shrink-0 text-[8.5px] font-black text-[#1A3673]/80">
+                        {sub.percentage >= 100 
+                          ? `COMPLETO${sub.targetQty > 0 ? ` (${formatQty(sub.targetQty)}/${formatQty(sub.targetQty)})` : ''}`
+                          : sub.targetQty > 0 
+                            ? `${formatQty(sub.currentQty)}/${formatQty(sub.targetQty)} - ${sub.percentage}%`
+                            : `${sub.percentage}%`}
+                      </span>
+                    </div>
+                    <div className="h-1 w-full bg-slate-200 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-[#1A3673] rounded-full transition-all duration-700 opacity-70"
+                        style={{ width: `${sub.percentage}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }

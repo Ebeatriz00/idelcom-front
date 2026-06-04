@@ -23,7 +23,7 @@ type Props = {
 
 function canReplace(item: PersonnelHomologationDocumentItem) {
   const normalized = (item.validationStatus ?? "").trim().toLowerCase();
-  const isReplaceableStatus = normalized === "vencido" || normalized === "por vencer" || normalized === "observado" || normalized === "faltante";
+  const isReplaceableStatus = normalized !== "pendiente";
   
   const hasDocumentId = Number(item.ssomaHomologationPersonnelDocumentId) > 0;
   const hasCompositeIds =
@@ -171,7 +171,7 @@ export function DocumentTable({
 
         <tbody className="divide-y divide-slate-100 bg-white">
           {documents.map((item, index) => {
-            const hasFile = Boolean(item.fileUrl?.trim());
+            const hasFile = Boolean(item.fileUid?.trim() || item.fileUrl?.trim());
             const key = getPersonnelHomologationRequirementItemKey(item, index);
             const isReplaceable = canReplace(item);
             const isSelected = selectedKeys.includes(key);

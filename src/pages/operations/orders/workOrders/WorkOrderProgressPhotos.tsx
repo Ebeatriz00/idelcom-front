@@ -49,10 +49,7 @@ export function WorkOrderProgressPhotos({ progressItem }: Props) {
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
-  const [photoSources, setPhotoSources] = useState<Record<string, string>>({});
   const [brokenPhotos, setBrokenPhotos] = useState<Record<string, boolean>>({});
-  const loadingPhotoUidsRef = useRef(new Set<string>());
-  const objectUrlsRef = useRef<string[]>([]);
   const viewerRef = useRef<HTMLDivElement | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
   const dragRef = useRef({
@@ -95,20 +92,8 @@ export function WorkOrderProgressPhotos({ progressItem }: Props) {
   useEffect(() => {
     setPhotoPage(1);
     setActivePhotoIndex(null);
-    setPhotoSources({});
     setBrokenPhotos({});
-    loadingPhotoUidsRef.current.clear();
-    objectUrlsRef.current.forEach((objectUrl) => URL.revokeObjectURL(objectUrl));
-    objectUrlsRef.current = [];
   }, [progressId]);
-
-  useEffect(() => {
-    return () => {
-      loadingPhotoUidsRef.current.clear();
-      objectUrlsRef.current.forEach((objectUrl) => URL.revokeObjectURL(objectUrl));
-      objectUrlsRef.current = [];
-    };
-  }, []);
 
   const PHOTOS_PER_PAGE = 8;
   const totalPhotoPages = Math.ceil(photos.length / PHOTOS_PER_PAGE);
@@ -145,34 +130,6 @@ export function WorkOrderProgressPhotos({ progressItem }: Props) {
 
     setPan((current) => clampPan(current, zoom));
   }, [zoom]);
-
-  const ensurePhotoSource = async (photoUid: string, url: string) => {
-    if (!photoUid || loadingPhotoUidsRef.current.has(photoUid) || photoSources[photoUid]) {
-      return;
-    }
-
-    loadingPhotoUidsRef.current.add(photoUid);
-
-    try {
-      const response = await fetch(resolvePhotoUrl(url), {
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        setBrokenPhotos((prev) => ({ ...prev, [photoUid]: true }));
-        return;
-      }
-
-      const blob = await response.blob();
-      const objectUrl = URL.createObjectURL(blob);
-      objectUrlsRef.current.push(objectUrl);
-      setPhotoSources((prev) => (prev[photoUid] ? prev : { ...prev, [photoUid]: objectUrl }));
-    } catch {
-      setBrokenPhotos((prev) => ({ ...prev, [photoUid]: true }));
-    } finally {
-      loadingPhotoUidsRef.current.delete(photoUid);
-    }
-  };
 
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (zoom <= 1) return;
@@ -263,7 +220,7 @@ export function WorkOrderProgressPhotos({ progressItem }: Props) {
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
           {paginatedPhotos.map((photo, index) => {
             const globalIndex = (photoPage - 1) * PHOTOS_PER_PAGE + index;
-            const resolvedUrl = photoSources[photo.fileUid] ?? resolvePhotoUrl(photo.url);
+            const resolvedUrl = resolvePhotoUrl(photo.url);
             const isBroken = brokenPhotos[photo.fileUid];
             const isActive = activePhotoIndex === globalIndex;
 
@@ -273,12 +230,6 @@ export function WorkOrderProgressPhotos({ progressItem }: Props) {
                 id={`thumb-${globalIndex}`}
                 type="button"
                 onClick={() => setActivePhotoIndex(globalIndex)}
-                onMouseEnter={() => {
-                  void ensurePhotoSource(photo.fileUid, photo.url);
-                }}
-                onFocus={() => {
-                  void ensurePhotoSource(photo.fileUid, photo.url);
-                }}
                 className={cn(
                   "relative flex aspect-square items-center justify-center overflow-hidden rounded-2xl border-2 bg-slate-50 transition-all active:scale-95",
                   isActive
@@ -291,7 +242,7 @@ export function WorkOrderProgressPhotos({ progressItem }: Props) {
                     src={resolvedUrl}
                     alt={`Evidencia ${globalIndex + 1}`}
                     onError={() => {
-                      void ensurePhotoSource(photo.fileUid, photo.url);
+                      setBrokenPhotos((prev) => ({ ...prev, [photo.fileUid]: true }));
                     }}
                     className="h-full w-full object-cover transition-transform duration-500 hover:scale-110"
                   />
@@ -377,10 +328,7 @@ export function WorkOrderProgressPhotos({ progressItem }: Props) {
             >
               <img
                 ref={imageRef}
-                src={
-                  photoSources[photos[activePhotoIndex].fileUid] ??
-                  resolvePhotoUrl(photos[activePhotoIndex].url)
-                }
+                src={resolvePhotoUrl(photos[activePhotoIndex].url)}
                 alt={`Evidencia ${activePhotoIndex + 1}`}
                 className="max-h-[82vh] max-w-[92vw] select-none object-contain shadow-2xl transition-transform duration-150"
                 style={{

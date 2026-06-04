@@ -60,13 +60,24 @@ export async function updateOperationsWorkOrderActivity(
 }
 
 export async function deleteOperationsWorkOrderActivity(
-  activityId: number
+  activityIds: number[]
 ): Promise<GlobalResponse> {
   const { data } = await http.delete<GlobalResponse>(
     "/OperationsWorkOrderActivity/Delete",
     {
-      params: { activityId },
+      data: activityIds,
     }
+  );
+  return data;
+}
+
+export async function cloneOperationsWorkOrderActivity(
+  activityId: number,
+  quantity: number
+): Promise<GlobalResponse> {
+  const { data } = await http.post<GlobalResponse>(
+    `/OperationsWorkOrderActivity/Clone`,
+    { activityId, quantity }
   );
   return data;
 }

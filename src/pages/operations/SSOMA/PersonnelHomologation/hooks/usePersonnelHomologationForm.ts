@@ -260,6 +260,7 @@ export function usePersonnelHomologationForm({
       homologationScopeId,
       isOperationScope,
       ssomaApproved: watch("homologationPersonnel.ssomaApproved"),
+      adminApproved: watch("homologationPersonnel.adminApproved"),
       completedDocs,
       readyDocs,
       hasUploadedDocuments,

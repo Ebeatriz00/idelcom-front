@@ -160,6 +160,7 @@ export function PersonnelHomologationFormModal({
             isOperationScope={state.isOperationScope}
             isScopeDisabled={state.hasUploadedDocuments}
             ssomaApproved={state.ssomaApproved}
+            adminApproved={state.adminApproved}
             register={register}
             operationOptions={queries.operationOptions}
             operationOptionsLoading={queries.operationOptionsLoading}

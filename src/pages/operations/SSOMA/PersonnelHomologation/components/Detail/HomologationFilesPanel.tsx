@@ -42,6 +42,11 @@ export function HomologationFilesPanel({
   const [showFilterMenu, setShowFilterMenu] = useState(false);
 
   const handleView = (item: PersonnelHomologationDocumentItem) => {
+    if (item.fileUid) {
+      const VITE_API_URL = (import.meta.env.VITE_API_URL as string)?.replace(/\/api\/?$/, "");
+      window.open(`${VITE_API_URL}/api/files/${item.fileUid}?t=${Date.now()}`, "_blank", "noopener,noreferrer");
+      return;
+    }
     if (!item.fileUrl) return;
     window.open(item.fileUrl, "_blank", "noopener,noreferrer");
   };

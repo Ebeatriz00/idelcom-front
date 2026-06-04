@@ -1,7 +1,3 @@
-import {
-  localFileUrl,
-  uploadToLocalDrive,
-} from "@/sharedKernel";
 import { Eye, FileText, UploadCloud, X, RefreshCw, CheckCircle2, AlertCircle, Info, Calendar, Clock } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { ProgressBar } from "@/layouts/presentation/ProgressBar";
@@ -103,26 +99,25 @@ export function PersonnelDocumentDropzone({
 
       if (Number(homologationScopeId) === 1) segments.push("INTERNO");
       else if (Number(homologationScopeId) === 2) {
-        segments.push("PROYECTO");
-        const cleanOpLabel = (operationLabel || String(requirement?.requirementId || "SIN_PROYECTO")).trim().toUpperCase().replace(/[^A-Z0-9 ]/g, "").trim();
-        segments.push(cleanOpLabel);
+        const cleanOpName = (operationLabel || "SIN_OPERACION").trim().toUpperCase().replace(/[^A-Z0-9 ]/g, "").trim();
+        segments.push("EXTERNO", cleanOpName);
       }
 
-      const extension = file.name.split(".").pop() || "";
       const cleanReqName = buildRequirementFileBaseName(requirementName);
+      const extension = file.name.split(".").pop()?.toLowerCase() || "";
       const newFileName = `${cleanReqName}.${extension}`;
       const renamedFile = new File([file], newFileName, { type: file.type });
 
-      const res = await uploadToLocalDrive(renamedFile, { segments }, {
-        onProgress: (p) => setProgress(p),
-        strategy: "overwrite",
-        name: newFileName,
-      });
+      // Simular progreso rpido para mantener la UX
+      setProgress(100);
+
+      const tempPath = segments.join("/") + "/" + newFileName;
 
       onUploaded({
-        fileName: res.fileName || newFileName,
-        fileUrl: localFileUrl(res.relativePath),
-        filePath: res.relativePath,
+        fileName: newFileName,
+        fileUrl: URL.createObjectURL(renamedFile),
+        filePath: tempPath,
+        rawFile: renamedFile,
       });
     } catch (err: any) {
       setError(err.message || "Error al subir");

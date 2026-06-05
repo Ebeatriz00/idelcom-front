@@ -13,6 +13,7 @@ import {
   ChevronRight,
   ListChecks,
   ShieldCheck,
+  Search,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { OptionItem, OperationsResponseDto } from "@/application";
@@ -124,6 +125,7 @@ export function OperationsSettingsModal({
   const [pmOption, setPmOption] = useState<OptionItem | null>(null);
   const [statusOption, setStatusOption] = useState<OptionItem | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const { register, handleSubmit, reset, control, watch, setValue } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -140,11 +142,22 @@ export function OperationsSettingsModal({
   );
 
   const requirements = requirementsResult?.items || [];
-  const totalPages = Math.ceil(requirements.length / PAGE_SIZE);
+
+  const filteredRequirements = useMemo(() => {
+    if (!searchQuery.trim()) return requirements;
+    const query = searchQuery.toLowerCase();
+    return requirements.filter(
+      (r) =>
+        r.name.toLowerCase().includes(query) ||
+        (r.description && r.description.toLowerCase().includes(query))
+    );
+  }, [requirements, searchQuery]);
+
+  const totalPages = Math.ceil(filteredRequirements.length / PAGE_SIZE);
   const paginatedRequirements = useMemo(() => {
     const start = (currentPage - 1) * PAGE_SIZE;
-    return requirements.slice(start, start + PAGE_SIZE);
-  }, [requirements, currentPage]);
+    return filteredRequirements.slice(start, start + PAGE_SIZE);
+  }, [filteredRequirements, currentPage]);
 
   useEffect(() => {
     if (open && initialData) {
@@ -372,9 +385,24 @@ export function OperationsSettingsModal({
               description="Selecciona los controles aplicables a la operacion"
             />
 
-            <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-slate-500">
-              <ShieldCheck className="size-3.5 text-[#1A3673]" />
-              {ssomaRequirementIds.length} seleccionados
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Buscar requerimiento..."
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="min-h-[38px] w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-xs font-medium text-slate-700 outline-none transition-all placeholder:text-slate-400 hover:border-slate-300 focus:border-[#1A3673] focus:ring-1 focus:ring-[#1A3673]"
+                />
+              </div>
+              <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-slate-500">
+                <ShieldCheck className="size-3.5 text-[#1A3673]" />
+                {ssomaRequirementIds.length} seleccionados
+              </div>
             </div>
           </div>
 
@@ -393,7 +421,7 @@ export function OperationsSettingsModal({
             </div>
           ) : (
             <div className="space-y-4">
-              {requirements.length > 0 ? (
+              {filteredRequirements.length > 0 ? (
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
                   {paginatedRequirements.map((req) => {
                     const checked = ssomaRequirementIds.includes(String(req.requirementId));
@@ -436,7 +464,7 @@ export function OperationsSettingsModal({
               {totalPages > 1 && (
                 <div className="flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
                   <p className="text-[10px] font-black uppercase text-slate-400">
-                    Total: {requirements.length} registros
+                    Total: {filteredRequirements.length} registros
                   </p>
                   <div className="flex items-center justify-between gap-3 sm:justify-end">
                     <button

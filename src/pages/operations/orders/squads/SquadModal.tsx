@@ -14,7 +14,7 @@ const schema = z.object({
   techLeaderId: z.number().min(1, "El líder es requerido"),
   description: z.string().optional(),
   operationsProjectConfigId: z.number().optional().nullable(),
-  squadCategory: z.string().default("Normal"),
+  squadCategory: z.string().default("OPERATIVE"),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -33,7 +33,7 @@ const defaultValues: FormValues = {
   techLeaderId: 0,
   description: "",
   operationsProjectConfigId: null,
-  squadCategory: "Normal",
+  squadCategory: "OPERATIVE",
 };
 
 export function SquadModal({
@@ -83,7 +83,7 @@ export function SquadModal({
           techLeaderId: initialData.techLeaderId || 0,
           description: initialData.description || "",
           operationsProjectConfigId: initialData.operationsProjectConfigId || null,
-          squadCategory: initialData.squadCategory || "Normal",
+          squadCategory: initialData.squadCategory || "OPERATIVE",
         });
       } else {
         setSelectedOption(null);

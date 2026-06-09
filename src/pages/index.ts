@@ -68,3 +68,4 @@ export { default as JobTitle } from "./rrhh/JobTitle/JobTitle";
 export { default as WorkerView } from "./rrhh/Worker/Worker";
 export { default as ConfigSettings } from "./settings/config-settings/ConfigurationSettings";
 export { default as ProfilesSettings } from "./settings/profiles-settings/ProfilesSettings";
+export { default as ClinicsPage } from "./operations/SSOMA/Clinics/Clinics";

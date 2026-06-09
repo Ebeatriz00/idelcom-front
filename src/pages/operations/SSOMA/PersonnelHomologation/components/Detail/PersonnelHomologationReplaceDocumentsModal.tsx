@@ -46,6 +46,7 @@ type ReplacementRequirementConfig = {
   duration?: number;
   requerimentDuration?: number;
   requiresExpiration?: boolean;
+  homologationPersonnelId?: number;
 };
 
 type ReplacementOriginalItem = PersonnelHomologationRequirementItem &
@@ -188,6 +189,7 @@ function mapItemToDraft(
       item.ssomaHomologationPersonnelDocumentId,
     homologationPersonnelId: toValidNumber(item.homologationPersonnelId),
     requirementId: toValidNumber(item.requirementId),
+    clinicId: Number((item as any).clinicId) > 0 ? Number((item as any).clinicId) : undefined,
     requirementName: item.requeriment,
     operationName,
     fileName: "",
@@ -335,6 +337,15 @@ function ReplacementDraftItem({
       String(original?.fileExpiration || original?.expirationDate || ""),
     );
   }, [config, duration, original]);
+
+  useEffect(() => {
+    if (
+      config?.homologationPersonnelId &&
+      config.homologationPersonnelId !== draft.homologationPersonnelId
+    ) {
+      onUpdate(draft.key, "homologationPersonnelId", config.homologationPersonnelId);
+    }
+  }, [config?.homologationPersonnelId, draft.homologationPersonnelId, draft.key, onUpdate]);
 
   const allowedExtensions = String(
     config?.allowedExtensions || original?.allowedExtensions || "",
@@ -785,6 +796,7 @@ export function PersonnelHomologationReplaceDocumentsModal({
                 drafts[0].ssomaHomologationPersonnelDocumentId,
               homologationPersonnelId: drafts[0].homologationPersonnelId,
               requirementId: drafts[0].requirementId,
+              clinicId: drafts[0].clinicId,
               fileName: drafts[0].fileName,
               fileUrl: "",
               filePath: "",
@@ -802,6 +814,7 @@ export function PersonnelHomologationReplaceDocumentsModal({
                 ssomaHomologationPersonnelDocumentId: draft.ssomaHomologationPersonnelDocumentId,
                 homologationPersonnelId: draft.homologationPersonnelId,
                 requirementId: draft.requirementId,
+                clinicId: draft.clinicId,
                 fileName: draft.fileName,
                 fileUrl: "",
                 filePath: "",

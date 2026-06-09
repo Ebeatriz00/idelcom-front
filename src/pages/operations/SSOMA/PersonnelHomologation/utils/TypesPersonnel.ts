@@ -82,6 +82,7 @@ export type PersonnelHomologationDocumentItem = Partial<PersonnelHomologationBas
   operationsRequirementId?: number;
   sourceDocumentId?: number;
   operationsName?: string;
+  clinicName?: string;
 };
 
 export function getPersonnelHomologationRequirementItemKey(

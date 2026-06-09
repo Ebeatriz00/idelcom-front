@@ -4,6 +4,7 @@ import type {
 } from "@/application";
 import { SearchSelect, UpperTextarea, type UseOptionsHook } from "@/layouts";
 import { useRequirementSpecifications } from "@/sharedKernel/hooks/operations/SSOMA/ssomaRequirement/useRequirement";
+import { useClinicSearchOptions } from "@/sharedKernel/hooks/operations/SSOMA/clinics/useClinic";
 import { Trash2, FileText, Calendar, Clock, AlertCircle, CheckCircle2, RotateCw, ShieldAlert } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -68,6 +69,7 @@ export function PersonnelHomologationDocumentCard({
   const currentFileUrl = watch(`documents.${index}.fileUrl`);
   const currentFilePath = watch(`documents.${index}.filePath`);
   const currentLocalUploadToken = watch(`documents.${index}.localUploadToken`);
+  const currentClinicId = watch(`documents.${index}.clinicId`);
 
   const isGeneralScope = Number(homologationScopeId) === 1;
 
@@ -139,11 +141,25 @@ export function PersonnelHomologationDocumentCard({
     }
   }, [currentIssueDate, requirementConfig, currentExpirationDate, index, setValue]);
 
-  // Identificar si es un documento sensible (Punto 4)
   const isSensitive = useMemo(() => {
     const name = (requirementName || "").toUpperCase();
     return name.includes("MÉDICO") || name.includes("DNI") || name.includes("ANTECEDENTES") || name.includes("SALUD");
   }, [requirementName]);
+
+  const isEmo = useMemo(() => {
+    const name = (requirementName || "").toUpperCase();
+    return name.includes("MÉDICO") || name.includes("MEDICO") || name.includes("EMO");
+  }, [requirementName]);
+
+  const [selectedClinicOpt, setSelectedClinicOpt] = useState<OptionItem | null>(null);
+
+  // Clear clinic if requirement is no longer EMO
+  useEffect(() => {
+    if (!isEmo && currentClinicId) {
+      setValue(`documents.${index}.clinicId`, undefined, { shouldDirty: true, shouldValidate: false });
+      setSelectedClinicOpt(null);
+    }
+  }, [isEmo, currentClinicId, index, setValue]);
 
   const isDropzoneDisabled = !currentRequirementId;
   const hasFile = Boolean(currentRequirementId) && Boolean(currentFileName);
@@ -348,6 +364,31 @@ export function PersonnelHomologationDocumentCard({
                </div>
              )}
           </div>
+
+          {isEmo && (
+            <div className="mb-4">
+              <label className={[labelClass, "flex items-center gap-2"].join(" ")}>
+                 Clínica (Examen Médico)
+              </label>
+              <Controller
+                name={`documents.${index}.clinicId`}
+                control={control}
+                render={({ field }) => (
+                  <SearchSelect
+                    useOptions={useClinicSearchOptions}
+                    value={selectedClinicOpt || (field.value ? { value: field.value, label: "Clínica seleccionada" } : null)}
+                    onChange={(opt) => {
+                      setSelectedClinicOpt(opt);
+                      field.onChange(opt ? Number(opt.value) : undefined);
+                    }}
+                    placeholder="Escribe para buscar una clínica..."
+                    pageSize={10}
+                    className="w-full"
+                  />
+                )}
+              />
+            </div>
+          )}
 
           <PersonnelDocumentDropzone
             requirement={requirementConfig}

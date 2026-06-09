@@ -148,7 +148,7 @@ export function OperationsSettingsModal({
     const query = searchQuery.toLowerCase();
     return requirements.filter(
       (r) =>
-        r.name.toLowerCase().includes(query) ||
+        (r.name || "").toLowerCase().includes(query) ||
         (r.description && r.description.toLowerCase().includes(query))
     );
   }, [requirements, searchQuery]);

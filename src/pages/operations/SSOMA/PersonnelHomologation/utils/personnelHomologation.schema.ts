@@ -22,6 +22,7 @@ export const homologationPersonnelSchema = z.object({
 
 export const homologationPersonnelDocumentSchema = z.object({
   requirementId: z.number().optional(),
+  clinicId: z.number().optional(),
   fileName: z.string().trim().optional(),
   fileUrl: z.string().trim().optional(),
   filePath: z.string().trim().optional(),
@@ -62,13 +63,13 @@ export const createSchema = () =>
       }
 
       // 2. Validar duplicados de RequirementId y restricción de CAMO (ID 12) en Scope 1
-      const seenRequirementIds = new Set<number>();
+      const seenRequirementKeys = new Set<string>();
 
       data.documents.forEach((doc, index) => {
         const requirementId = Number(doc.requirementId);
+        const clinicId = Number(doc.clinicId);
         const hasFileName = Boolean(doc.fileName?.trim());
         const hasFilePath = Boolean(doc.filePath?.trim());
-        const hasIssueDate = Boolean(doc.issueDate?.trim());
         const isAttemptingToSaveDocument = Boolean(doc.localUploadToken?.trim());
 
         if (!requirementId) {
@@ -99,7 +100,7 @@ export const createSchema = () =>
             });
           }
 
-          if (!hasIssueDate) {
+          if (!doc.issueDate?.trim()) {
             ctx.addIssue({
               code: z.ZodIssueCode.custom,
               message: "Requerido",
@@ -108,15 +109,18 @@ export const createSchema = () =>
           }
         }
 
-        // Validar duplicados
-        if (seenRequirementIds.has(requirementId)) {
+        // Validar duplicados (permite mismo requisito si es EMO y tiene distinta clínica)
+        const key = clinicId ? `${requirementId}-${clinicId}` : `${requirementId}`;
+        if (seenRequirementKeys.has(key)) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: "Este requisito ya ha sido seleccionado en esta homologación.",
+            message: clinicId 
+              ? "Ya existe un documento con este requisito para esta misma clínica."
+              : "Este requisito ya ha sido seleccionado en esta homologación.",
             path: ["documents", index, "requirementId"],
           });
         }
-        seenRequirementIds.add(requirementId);
+        seenRequirementKeys.add(key);
 
         // Validar CAMO (12) en Scope 1
         if (isGeneralScope && requirementId === 12) {

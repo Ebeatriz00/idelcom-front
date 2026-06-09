@@ -18,6 +18,7 @@ type Props = {
   onReuse: (item: PersonnelHomologationDocumentItem) => void;
   onView: (item: PersonnelHomologationDocumentItem) => void;
   onDownload?: (item: PersonnelHomologationDocumentItem) => void;
+  onDelete?: (item: PersonnelHomologationDocumentItem) => void;
 };
 
 const PAGE_SIZE = 8;
@@ -63,6 +64,7 @@ export function DocumentManagementSection({
   onReuse,
   onView,
   onDownload,
+  onDelete,
 }: Props) {
   const [activeTab, setActiveTab] = useState<"projects" | "general">("projects");
   const [search, setSearch] = useState("");
@@ -79,12 +81,31 @@ export function DocumentManagementSection({
     [currentItems, isProjectsTab, search, selectedStatus],
   );
 
-  const pageCount = Math.max(1, Math.ceil(filteredItems.length / PAGE_SIZE));
+  const groupedFilteredItems = useMemo(() => {
+    const groups: { key: string; items: PersonnelHomologationDocumentItem[] }[] = [];
+    filteredItems.forEach((item) => {
+      const reqName = String(item.requeriment || "unknown").trim().toLowerCase();
+      const groupKey = isProjectsTab
+        ? `${(item as any).operationsId}-${reqName}`
+        : reqName;
+
+      const existing = groups.find((g) => g.key === groupKey);
+      if (existing) {
+        existing.items.push(item);
+      } else {
+        groups.push({ key: groupKey, items: [item] });
+      }
+    });
+    return groups;
+  }, [filteredItems, isProjectsTab]);
+
+  const pageCount = Math.max(1, Math.ceil(groupedFilteredItems.length / PAGE_SIZE));
 
   const paginatedItems = useMemo(() => {
     const start = pageIndex * PAGE_SIZE;
-    return filteredItems.slice(start, start + PAGE_SIZE);
-  }, [filteredItems, pageIndex]);
+    const paginatedGroups = groupedFilteredItems.slice(start, start + PAGE_SIZE);
+    return paginatedGroups.flatMap(g => g.items);
+  }, [groupedFilteredItems, pageIndex]);
 
   const selectedItems = useMemo(() => {
     const selected = new Set(selectedKeys);
@@ -167,6 +188,7 @@ export function DocumentManagementSection({
           onReplace={(item) => onReplace([item])}
           onReuse={onReuse}
           onDownload={onDownload}
+          onDelete={onDelete}
           emptyTitle={
             search || selectedStatus ? "No se encontraron resultados" : undefined
           }
@@ -178,14 +200,14 @@ export function DocumentManagementSection({
         />
       </div>
 
-      {filteredItems.length > 0 && (
+      {groupedFilteredItems.length > 0 && (
         <div className="flex flex-col gap-3 border-t border-slate-100 px-2 py-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
             <FileText className="h-3.5 w-3.5" />
             <span>
               Mostrando {pageIndex * PAGE_SIZE + 1}-
-              {Math.min((pageIndex + 1) * PAGE_SIZE, filteredItems.length)} de{" "}
-              {filteredItems.length} registros
+              {Math.min((pageIndex + 1) * PAGE_SIZE, groupedFilteredItems.length)} de{" "}
+              {groupedFilteredItems.length} requerimientos
             </span>
           </div>
 

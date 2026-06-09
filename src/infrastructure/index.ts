@@ -99,3 +99,4 @@ export * from "./api-clients/settings/setting.client";
 export * from "./api-clients/sttask/state-task.client";
 export * from "./api-clients/Taxes/taxes.client";
 export * from "./api-clients/type-analysis/type-analysis.client";
+export * from "./api-clients/operations/SSOMA/clinics/clinic.client";

@@ -40,6 +40,7 @@ export interface SsomaHomologationPersonnelDocumentReplaceDto {
   observation: string;
   replacementReason?: string;
   file?: any;
+  clinicId?: number;
 }
 
 export interface SsomaHomologationPersonnelDocumentReplaceRequestDto extends SsomaHomologationPersonnelDocumentReplaceDto {

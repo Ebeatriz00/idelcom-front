@@ -132,3 +132,4 @@ export * from "./dtos/presale/TasksProjectResponse.dto";
 export * from "./dtos/settings/notifications.Dto";
 export * from "./dtos/sttask/prioritystate/PriorityState.dto";
 export * from "./dtos/sttask/state-task/state-task.dto";
+export * from "./dtos/operations/clinics/clinic.dto";

@@ -12,6 +12,7 @@ import {
   fetchPersonnelHomologationCreate,
   fetchPersonnelHomologationList,
   fetchReplaceSsomaHomologationPersonnelDocument,
+  fetchDeleteSsomaHomologationPersonnelDocument,
   fetchSelectOperationsForHomologation,
 } from "@/infrastructure";
 import { closeAlert, showApiError, showSuccess } from "@/sharedKernel";
@@ -161,6 +162,34 @@ export function useReplaceSsomaHomologationPersonnelDocument() {
     onError: async (e) => {
       closeAlert();
       await showApiError(e, "Error reemplazando el documento.");
+    },
+  });
+}
+
+export function useDeleteSsomaHomologationPersonnelDocument() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: (ssomaHomologationPersonnelDocumentId: number) => 
+      fetchDeleteSsomaHomologationPersonnelDocument(ssomaHomologationPersonnelDocumentId),
+    retry: false,
+    onSuccess: async (res) => {
+      closeAlert();
+      if (res.status === 1) {
+        await showSuccess("Éxito", "Documento inactivado correctamente.");
+        await qc.invalidateQueries({
+          queryKey: qkPersonnelHomologation.all,
+        });
+      } else {
+        await showApiError(
+          { response: { data: res } },
+          "No se pudo inactivar el documento.",
+        );
+      }
+    },
+    onError: async (e) => {
+      closeAlert();
+      await showApiError(e, "Error inactivando el documento.");
     },
   });
 }

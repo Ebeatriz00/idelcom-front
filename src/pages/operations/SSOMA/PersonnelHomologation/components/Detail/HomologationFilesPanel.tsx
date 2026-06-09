@@ -14,6 +14,8 @@ import {
   Trash2,
 } from "lucide-react";
 import { cn } from "@/sharedKernel/lib/cn";
+import { useDeleteSsomaHomologationPersonnelDocument } from "@/sharedKernel";
+import Swal from "sweetalert2";
 
 const DOCUMENT_STATUS_OPTIONS = [
   { value: "Vigente", icon: <CheckCircle2 className="size-3" />, color: "text-emerald-600" },
@@ -40,6 +42,28 @@ export function HomologationFilesPanel({
   const [currentSelectedItems, setCurrentSelectedItems] = useState<PersonnelHomologationDocumentItem[]>([]);
   const [filterStatus, setFilterStatus] = useState("");
   const [showFilterMenu, setShowFilterMenu] = useState(false);
+  const { mutateAsync: deleteDocument } = useDeleteSsomaHomologationPersonnelDocument();
+
+  const handleDelete = async (item: PersonnelHomologationDocumentItem) => {
+    const docId = Number(item.ssomaHomologationPersonnelDocumentId);
+    if (!docId) return;
+
+    const result = await Swal.fire({
+      title: "¿Inactivar documento?",
+      text: "El requisito pasará a estado Pendiente y deberás subir uno nuevo.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#64748b",
+      confirmButtonText: "Sí, inactivar",
+      cancelButtonText: "Cancelar",
+      reverseButtons: true,
+    });
+
+    if (result.isConfirmed) {
+      await deleteDocument(docId);
+    }
+  };
 
   const handleView = (item: PersonnelHomologationDocumentItem) => {
     if (item.fileUid) {
@@ -164,6 +188,7 @@ export function HomologationFilesPanel({
         onReplace={setReplaceItems}
         onView={handleView}
         onReuse={handleReuse}
+        onDelete={handleDelete}
       />
 
       <PersonnelHomologationReplaceDocumentsModal

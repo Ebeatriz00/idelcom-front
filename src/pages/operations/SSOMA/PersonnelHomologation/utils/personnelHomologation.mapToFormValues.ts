@@ -67,6 +67,7 @@ export function mapToRequestDto(
       )
       .map((doc) => ({
         requirementId: Number(doc.requirementId),
+        clinicId: doc.clinicId ? Number(doc.clinicId) : undefined,
         fileName: doc.fileName ?? "",
         fileUrl: doc.fileUrl ?? "",
         filePath: doc.filePath ?? "",

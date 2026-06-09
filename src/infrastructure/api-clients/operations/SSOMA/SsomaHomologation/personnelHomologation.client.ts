@@ -126,3 +126,15 @@ export async function fetchReplaceSsomaHomologationPersonnelDocument(
   );
   return data;
 }
+
+export async function fetchDeleteSsomaHomologationPersonnelDocument(
+  ssomaHomologationPersonnelDocumentId: number,
+): Promise<GlobalResponse> {
+  const { data } = await http.delete<GlobalResponse>(
+    "/SsomaHomologationPersonnelDocument/DeleteSsomaHomologationPersonnelDocument",
+    {
+      params: { ssomaHomologationPersonnelDocumentId },
+    }
+  );
+  return data;
+}

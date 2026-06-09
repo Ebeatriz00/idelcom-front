@@ -11,6 +11,7 @@ import {
   Boxes,
   Brands,
   Categories,
+  ClinicsPage,
   CommercialParameters,
   Company,
   ConceptGroups,
@@ -218,6 +219,7 @@ export default function AppRoutes() {
       />
 
       <Route path="/operations/SSOMA/Process" element={<ProcessPage />} />
+      <Route path="/operations/SSOMA/Clinics" element={<ClinicsPage />} />
       <Route path="/operations/support" element={<SupportPage />} />
 
       <Route path="*" element={<Construction />} />

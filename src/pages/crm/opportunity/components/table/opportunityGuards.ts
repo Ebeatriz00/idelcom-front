@@ -95,13 +95,7 @@ export function canOpenChangeState(o: OpportunitiesResponseDto): GuardResult {
   // ✅ TAREAS PENDIENTES (siempre bloquea)
   if (taskPendings) return { ok: false, msg: warnMsg.taskPending };
 
-  // 4️⃣ Preventa entregado requerido para OPORTUNIDAD / NEGOCIACION
-  if (
-    (state === "OPORTUNIDAD" || state === "NEGOCIACION") &&
-    !preSalesDelivered
-  ) {
-    return { ok: false, msg: warnMsg.preventa };
-  }
+
 
   // 5️⃣ NEGOCIACION → PRECIOS vs MARGENES
   if (state === "NEGOCIACION") {

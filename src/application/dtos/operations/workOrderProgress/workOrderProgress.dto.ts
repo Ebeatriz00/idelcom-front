@@ -28,3 +28,10 @@ export interface   OperationsWorkOrderProgressResponseDto {
   subActivityName?: string;
   measurementUnitSymbol?: string;
 }
+
+export interface OperationsWorkOrderProgressCreateDto {
+  activityId: number;
+  reportedQuantity: number;
+  reportedDate: string;
+  observations?: string;
+}

@@ -68,10 +68,12 @@ function StatCard({
   label,
   value,
   icon,
+  valueClassName,
 }: {
   label: string;
   value: string | number;
   icon: React.ReactNode;
+  valueClassName?: string;
 }) {
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
@@ -79,11 +81,11 @@ function StatCard({
         <div className="grid size-8 shrink-0 place-items-center rounded-lg bg-slate-50 text-slate-700">
           {icon}
         </div>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">
             {label}
           </p>
-          <p className="text-xl font-black leading-none tracking-tight text-slate-950">
+          <p className={cn("font-black leading-none tracking-tight text-slate-950", valueClassName || "text-xl")}>
             {value}
           </p>
         </div>
@@ -110,6 +112,7 @@ export function WorkOrderProgressModal({
   const [selectedSubActivityFilter, setSelectedSubActivityFilter] = useState<
     number | null
   >(null);
+  const [selectedWorkerFilter, setSelectedWorkerFilter] = useState<string>("");
   const [selectedProgressItem, setSelectedProgressItem] =
     useState<OperationsWorkOrderProgressResponseDto | null>(null);
 
@@ -177,6 +180,11 @@ export function WorkOrderProgressModal({
 
   const allItems = data?.items || [];
 
+  const availableWorkers = useMemo(() => {
+    const workers = new Set(allItems.map((i) => i.workerName).filter(Boolean));
+    return Array.from(workers).sort((a, b) => (a || "").localeCompare(b || ""));
+  }, [allItems]);
+
   useEffect(() => {
     if (activitiesList.length > 0 || allItems.length > 0) {
       console.log("DEBUG FRONTEND DATA", {
@@ -216,6 +224,12 @@ export function WorkOrderProgressModal({
       }
     }
 
+    if (selectedWorkerFilter) {
+      filtered = filtered.filter(
+        (item) => item.workerName === selectedWorkerFilter,
+      );
+    }
+
     const byActivity: Record<number, typeof filtered> = {};
     filtered.forEach((item) => {
       if (!byActivity[item.activityId]) byActivity[item.activityId] = [];
@@ -240,6 +254,7 @@ export function WorkOrderProgressModal({
     selectedWorkOrderFilter,
     selectedActivityFilter,
     selectedSubActivityFilter,
+    selectedWorkerFilter,
     subActivities,
   ]);
 
@@ -458,6 +473,23 @@ export function WorkOrderProgressModal({
       activityItems.map((i) => i.workerName).filter(Boolean),
     ).size;
 
+    let dateRange = "Sin registro";
+    if (availableDates.length > 0) {
+      const firstDateStr = availableDates[availableDates.length - 1];
+      const lastDateStr = availableDates[0];
+      
+      const formatToDDMMYY = (dateString: string) => {
+        const [y, m, d] = dateString.split("-");
+        return `${d}/${m}/${y.slice(-2)}`;
+      };
+      
+      if (firstDateStr === lastDateStr) {
+        dateRange = formatToDDMMYY(firstDateStr);
+      } else {
+        dateRange = `${formatToDDMMYY(firstDateStr)} - ${formatToDDMMYY(lastDateStr)}`;
+      }
+    }
+
     return {
       count: activityItems.length,
       persons: uniquePersons,
@@ -466,8 +498,10 @@ export function WorkOrderProgressModal({
       target: targetQty % 1 === 0 ? targetQty : Number(targetQty).toFixed(1),
       percentage,
       hasTarget: targetQty > 0,
+      workedDays: availableDates.length,
+      dateRange,
     };
-  }, [activityItems]);
+  }, [activityItems, availableDates]);
 
   const groupedItems = useMemo(() => {
     const groups: Record<string, typeof allItems> = {};
@@ -515,7 +549,7 @@ export function WorkOrderProgressModal({
                 </p>
               </div>
 
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 lg:w-[420px] lg:justify-self-end">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 lg:w-[480px] lg:justify-self-end">
                 <StatCard
                   label="Reportes"
                   value={stats.count}
@@ -526,13 +560,24 @@ export function WorkOrderProgressModal({
                   value={stats.persons}
                   icon={<Users className="size-4" />}
                 />
+                <StatCard
+                  label="Periodo"
+                  value={stats.dateRange}
+                  icon={<CalendarDays className="size-4" />}
+                  valueClassName="text-[13px] sm:text-[15px] whitespace-nowrap"
+                />
+                <StatCard
+                  label="Días Laborados"
+                  value={stats.workedDays}
+                  icon={<CalendarDays className="size-4" />}
+                />
               </div>
             </div>
           </section>
 
           <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-            <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
-              <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-end lg:max-w-4xl">
+            <div className="flex w-full flex-col gap-5 xl:flex-row xl:items-end">
+              <div className="grid w-full flex-1 grid-cols-1 gap-3 sm:grid-cols-2">
                 <div className="min-w-0 flex-1">
                   <label className="mb-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400">
                     <Filter className="size-3.5" />
@@ -617,44 +662,75 @@ export function WorkOrderProgressModal({
                     ))}
                   </select>
                 </div>
+
+                <div className="min-w-0 flex-1">
+                  <label className="mb-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                    <Filter className="size-3.5" />
+                    Filtrar personal
+                  </label>
+                  <select
+                    value={selectedWorkerFilter || ""}
+                    onChange={(e) => setSelectedWorkerFilter(e.target.value)}
+                    className="min-h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-4 text-[11px] font-bold uppercase tracking-widest text-slate-700 outline-none transition-all focus:border-slate-400 focus:bg-white"
+                  >
+                    <option value="">Todo el personal</option>
+                    {availableWorkers.map((worker) => (
+                      <option key={worker} value={worker}>
+                        {worker}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-1">
-                  <button
-                    type="button"
-                    onClick={() => setView("dia")}
-                    className={cn(
-                      "min-h-10 rounded-md px-4 text-[10px] font-black uppercase tracking-widest transition-all",
-                      view === "dia"
-                        ? "bg-white text-slate-950 shadow-sm"
-                        : "text-slate-400 hover:text-slate-700",
-                    )}
-                  >
-                    Día
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setView("semana")}
-                    className={cn(
-                      "min-h-10 rounded-md px-4 text-[10px] font-black uppercase tracking-widest transition-all",
-                      view === "semana"
-                        ? "bg-white text-slate-950 shadow-sm"
-                        : "text-slate-400 hover:text-slate-700",
-                    )}
-                  >
-                    Todo
-                  </button>
+              <div className="flex w-full shrink-0 flex-col gap-3 xl:w-[220px]">
+                <div className="flex flex-col">
+                  <label className="mb-2 hidden items-center gap-2 text-[10px] font-black uppercase tracking-widest opacity-0 xl:flex" aria-hidden="true">
+                    <Filter className="size-3.5" />
+                    Espacio
+                  </label>
+                  <div className="grid grid-cols-2 rounded-lg border border-slate-200 bg-slate-50 p-1">
+                    <button
+                      type="button"
+                      onClick={() => setView("dia")}
+                      className={cn(
+                        "min-h-10 rounded-md px-4 text-[10px] font-black uppercase tracking-widest transition-all",
+                        view === "dia"
+                          ? "bg-white text-slate-950 shadow-sm"
+                          : "text-slate-400 hover:text-slate-700",
+                      )}
+                    >
+                      Día
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setView("semana")}
+                      className={cn(
+                        "min-h-10 rounded-md px-4 text-[10px] font-black uppercase tracking-widest transition-all",
+                        view === "semana"
+                          ? "bg-white text-slate-950 shadow-sm"
+                          : "text-slate-400 hover:text-slate-700",
+                      )}
+                    >
+                      Todo
+                    </button>
+                  </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={handleExportExcel}
-                  className="flex min-h-11 items-center justify-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-emerald-700 transition-all hover:bg-emerald-100 active:scale-95"
-                >
-                  <Download className="size-3.5" />
-                  Excel
-                </button>
+                <div className="flex flex-col">
+                  <label className="mb-2 hidden items-center gap-2 text-[10px] font-black uppercase tracking-widest opacity-0 xl:flex" aria-hidden="true">
+                    <Filter className="size-3.5" />
+                    Espacio
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleExportExcel}
+                    className="flex w-full min-h-11 items-center justify-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-emerald-700 transition-all hover:bg-emerald-100 active:scale-95"
+                  >
+                    <Download className="size-3.5" />
+                    Excel
+                  </button>
+                </div>
               </div>
             </div>
 

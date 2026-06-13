@@ -160,7 +160,7 @@ export function WorkersTable({
               <button
                 onClick={() => onToggleStatus(row.original)}
                 className="rounded-md p-1.5 hover:bg-emerald-50"
-                title={active ? "Desactivar" : "Activar"}
+                title={active ? "Inhabilitar" : "Habilitar"}
               >
                 <Power
                   className={`size-4 ${

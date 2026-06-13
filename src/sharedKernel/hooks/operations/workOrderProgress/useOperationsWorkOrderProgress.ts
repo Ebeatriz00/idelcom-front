@@ -1,7 +1,8 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   fetchOperationsWorkOrderProgressList,
   fetchOperationsWorkOrderProgressPhotos,
+  createOperationsWorkOrderProgress,
 } from "@/infrastructure/api-clients/operations/workOrderProgress/workOrderProgress.client";
 import { qkOperationsWorkOrderProgress } from "./operationsWorkOrderProgress.qk";
 
@@ -32,5 +33,18 @@ export function useOperationsWorkOrderProgressPhotos(progressId: number | null) 
     staleTime: 0,
     gcTime: 0,
     refetchOnMount: "always",
+  });
+}
+
+export function useCreateOperationsWorkOrderProgress() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: createOperationsWorkOrderProgress,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["operations-work-order-progress"] });
+      queryClient.invalidateQueries({ queryKey: ["operations", "workOrderActivity"] });
+      queryClient.invalidateQueries({ queryKey: ["operations", "workOrder"] });
+      queryClient.invalidateQueries({ queryKey: ["Orders"] });
+    },
   });
 }

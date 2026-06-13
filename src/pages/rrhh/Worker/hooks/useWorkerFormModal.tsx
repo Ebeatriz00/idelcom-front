@@ -126,5 +126,6 @@ export function useWorkerFormModal() {
     submit,
     saving,
     editingId,
+    detail,
   };
 }

@@ -12,11 +12,12 @@ import {
   ChevronDown,
   ChevronUp,
   Activity,
+  Plus,
 } from "lucide-react";
 import { DragDropContext } from "@hello-pangea/dnd";
 import type { DropResult } from "@hello-pangea/dnd";
 import { useQueryClient } from "@tanstack/react-query";
-import { useUpdateSquad, useOperationsWorkOrderProgressList, useWorkOrderActivityList } from "@/sharedKernel";
+import { useUpdateSquad, useOperationsWorkOrderProgressList, useWorkOrderActivityList, useCreateOperationsWorkOrderProgress } from "@/sharedKernel";
 import { useState, useMemo } from "react";
 import type { OperationsSquadResponseDto } from "@/application";
 
@@ -216,6 +217,30 @@ export function KanbanModal({
 
 const WorkOrderActivitiesAccordion = ({ workOrderId, allProgressData }: { workOrderId: number, allProgressData: any[] }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const { mutateAsync: reportProgress, isPending: isReporting } = useCreateOperationsWorkOrderProgress();
+
+  const [selectedActivityForProgress, setSelectedActivityForProgress] = useState<any | null>(null);
+  const [reportedQty, setReportedQty] = useState<string>("");
+
+  const handleReportProgress = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedActivityForProgress) return;
+    const qty = parseFloat(reportedQty);
+    if (isNaN(qty) || qty <= 0) return;
+
+    try {
+      await reportProgress({
+        activityId: selectedActivityForProgress.id,
+        reportedQuantity: qty,
+        reportedDate: new Date().toISOString(),
+      });
+      
+      setSelectedActivityForProgress(null);
+      setReportedQty("");
+    } catch (error) {
+      console.error("Error reporting progress", error);
+    }
+  };
 
   const { data: activitiesData } = useWorkOrderActivityList(
     workOrderId,
@@ -338,7 +363,21 @@ const WorkOrderActivitiesAccordion = ({ workOrderId, allProgressData }: { workOr
                 <div className="flex flex-col justify-center rounded bg-slate-50 px-2.5 py-2 border border-slate-100">
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="text-[9.5px] font-bold text-slate-700 truncate mr-2" title={act.name}>{act.name}</span>
-                    <span className="shrink-0 text-[9px] font-black text-[#1A3673]">
+                    <span className="shrink-0 text-[9px] font-black text-[#1A3673] flex items-center">
+                      {!act.isCalculatedBySubs && act.percentage < 100 && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedActivityForProgress(act);
+                            setReportedQty("");
+                          }}
+                          className="mr-2 inline-flex items-center justify-center rounded-full bg-blue-100 p-1 text-[#1A3673] transition-colors hover:bg-blue-200"
+                          title="Reportar avance"
+                        >
+                          <Plus className="size-2.5" />
+                        </button>
+                      )}
                       {act.percentage >= 100 
                         ? `COMPLETO${act.isCalculatedBySubs ? ` (${act.totalSubs}/${act.totalSubs})` : act.targetQty > 0 ? ` (${formatQty(act.targetQty)}/${formatQty(act.targetQty)})` : ''}` 
                         : act.isCalculatedBySubs 
@@ -359,7 +398,21 @@ const WorkOrderActivitiesAccordion = ({ workOrderId, allProgressData }: { workOr
                   <div key={sub.id} className="ml-4 flex flex-col justify-center rounded border border-slate-100 bg-white px-2.5 py-1.5">
                     <div className="flex items-center justify-between mb-1.5">
                       <span className="text-[8.5px] font-semibold text-slate-500 truncate mr-2" title={sub.name}>└ {sub.name}</span>
-                      <span className="shrink-0 text-[8.5px] font-black text-[#1A3673]/80">
+                      <span className="shrink-0 text-[8.5px] font-black text-[#1A3673]/80 flex items-center">
+                        {sub.percentage < 100 && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedActivityForProgress(sub);
+                              setReportedQty("");
+                            }}
+                            className="mr-2 inline-flex items-center justify-center rounded-full bg-blue-100 p-0.5 text-[#1A3673] transition-colors hover:bg-blue-200"
+                            title="Reportar avance"
+                          >
+                            <Plus className="size-2.5" />
+                          </button>
+                        )}
                         {sub.percentage >= 100 
                           ? `COMPLETO${sub.targetQty > 0 ? ` (${formatQty(sub.targetQty)}/${formatQty(sub.targetQty)})` : ''}`
                           : sub.targetQty > 0 
@@ -379,6 +432,71 @@ const WorkOrderActivitiesAccordion = ({ workOrderId, allProgressData }: { workOr
             );
           })}
         </div>
+      )}
+
+      {selectedActivityForProgress && (
+        <Modal
+          title="Reportar avance"
+          onClose={() => {
+            setSelectedActivityForProgress(null);
+            setReportedQty("");
+          }}
+          size="sm"
+        >
+          <form onSubmit={handleReportProgress} className="p-4 sm:p-5">
+            <p className="mb-4 text-xs font-semibold text-slate-700 line-clamp-2" title={selectedActivityForProgress.name}>
+              {selectedActivityForProgress.name}
+            </p>
+
+            <div className="mb-4">
+              <label className="mb-1 block text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                Progreso actual
+              </label>
+              <p className="text-sm font-bold text-slate-900">
+                {formatQty(selectedActivityForProgress.currentQty)} de {formatQty(selectedActivityForProgress.targetQty)}
+              </p>
+            </div>
+
+            <div className="mb-6">
+              <label htmlFor="reportedQty" className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                Cantidad a sumar
+              </label>
+              <input
+                id="reportedQty"
+                type="number"
+                step="any"
+                min="0.01"
+                max={selectedActivityForProgress.targetQty > 0 ? selectedActivityForProgress.targetQty - selectedActivityForProgress.currentQty : undefined}
+                required
+                autoFocus
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-[#1A3673] focus:ring-1 focus:ring-[#1A3673]"
+                value={reportedQty}
+                onChange={(e) => setReportedQty(e.target.value)}
+                placeholder="0"
+              />
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedActivityForProgress(null);
+                  setReportedQty("");
+                }}
+                className="rounded-md px-4 py-2 text-xs font-bold text-slate-600 transition-colors hover:bg-slate-100"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={isReporting || !reportedQty || parseFloat(reportedQty) <= 0}
+                className="rounded-md bg-[#1A3673] px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-[#132856] disabled:opacity-50"
+              >
+                {isReporting ? "Guardando..." : "Guardar"}
+              </button>
+            </div>
+          </form>
+        </Modal>
       )}
     </div>
   );

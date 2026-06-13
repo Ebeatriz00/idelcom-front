@@ -145,6 +145,15 @@ export default function Orders() {
   const { data: allOrdersData } = useOrdersList(0, 500, "");
   const hasAdditionals = allOrdersData?.items?.some(order => order.parentOpportunityId === selectedOrder?.opporId);
 
+  useEffect(() => {
+    if (selectedOrder && allOrdersData?.items) {
+      const updatedOrder = allOrdersData.items.find((o) => o.operationsId === selectedOrder.operationsId);
+      if (updatedOrder && updatedOrder.progressPercentage !== selectedOrder.progressPercentage) {
+        setSelectedOrder(updatedOrder);
+      }
+    }
+  }, [allOrdersData?.items, selectedOrder?.operationsId]);
+
   // Obtener TODAS las OTs de la operación para filtrar las cuadrillas admin por workOrderId
   const { data: allWorkOrdersData } = useWorkOrderList(0, 500, selectedOrder?.operationsId, "");
   const allWorkOrderIds = (allWorkOrdersData?.items || []).map((wo) => wo.workOrderId as number);

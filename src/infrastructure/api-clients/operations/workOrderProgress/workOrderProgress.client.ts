@@ -34,3 +34,13 @@ export async function fetchOperationsWorkOrderProgressPhotos(
   );
   return data;
 }
+
+export async function createOperationsWorkOrderProgress(
+  dto: import("@/application").OperationsWorkOrderProgressCreateDto
+): Promise<import("@/sharedKernel").GlobalResponse> {
+  const { data } = await http.post<import("@/sharedKernel").GlobalResponse>(
+    "/OperationsWorkOrderProgress",
+    dto
+  );
+  return data;
+}

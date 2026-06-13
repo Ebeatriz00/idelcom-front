@@ -59,11 +59,11 @@ export function WorkerDetailPanel({ worker, isLoading, canEdit, canEditStatus, o
               <button
                 onClick={() => onToggleStatus(worker)}
                 className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 border shadow-sm ${isActive
-                  ? 'bg-rose-500/90 text-white border-rose-600 hover:bg-rose-600'
-                  : 'bg-emerald-500/90 text-white border-emerald-600 hover:bg-emerald-600'
+                  ? 'bg-rose-500/10 text-rose-400 border-rose-500/20 hover:bg-rose-500/20'
+                  : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20'
                   }`}
               >
-                <Power className="w-4 h-4" /> {isActive ? 'Cesar' : 'Reactivar'}
+                <Power className="w-4 h-4" /> {isActive ? 'Inhabilitar' : 'Habilitar'}
               </button>
             )}
             {canEdit && (

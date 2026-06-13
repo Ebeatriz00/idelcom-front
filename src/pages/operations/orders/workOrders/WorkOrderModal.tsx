@@ -1118,15 +1118,39 @@ export function WorkOrderModal({
                                     </div>
 
                                     <div className="flex items-center gap-3">
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                         onClick={() => onAddActivity(child)}
-                                        className="flex size-9 items-center justify-center rounded-lg border border-emerald-500 text-emerald-600 transition-all hover:bg-emerald-50 hover:text-emerald-700"
-                                        title="Añadir subactividad"
-                                      >
-                                        <Plus className="size-4" />
-                                      </Button>
+                                      <div className="min-w-[50px] text-center border-r border-slate-200 pr-3 mr-1">
+                                        <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest mb-0.5">
+                                          Meta
+                                        </p>
+                                        {editingActivityId === child.activityId ? (
+                                          <input
+                                            autoFocus
+                                            type="text"
+                                            value={tempTargetQuantity}
+                                            onChange={(e) =>
+                                              setTempTargetQuantity(
+                                                e.target.value.replace(/[^0-9.]/g, ""),
+                                              )
+                                            }
+                                            onBlur={() => onUpdateTargetQuantity(child)}
+                                            onKeyDown={(e) => {
+                                              if (e.key === "Enter") onUpdateTargetQuantity(child);
+                                              if (e.key === "Escape") setEditingActivityId(null);
+                                            }}
+                                            className="w-12 text-center text-[10px] font-black text-blue-600 bg-blue-50 rounded-md py-0.5 border border-blue-400 outline-none"
+                                          />
+                                        ) : (
+                                          <span
+                                            onClick={() => {
+                                              setEditingActivityId(child.activityId);
+                                              setTempTargetQuantity(child.targetQuantity.toString());
+                                            }}
+                                            className="text-xs font-black text-slate-900 cursor-pointer hover:text-blue-600 transition-colors"
+                                          >
+                                            {child.targetQuantity}
+                                          </span>
+                                        )}
+                                      </div>
 
                                       <Button
                                         variant="ghost"

@@ -355,7 +355,7 @@ const WorkOrderActivitiesAccordion = ({ workOrderId, allProgressData }: { workOr
       </button>
       
       {isOpen && (
-        <div className="mt-1 flex flex-col gap-1.5 rounded-lg border border-slate-200 bg-white p-2 shadow-inner">
+        <div className="mt-1 flex flex-col gap-1.5 rounded-lg border border-slate-200 bg-white p-2 shadow-inner max-h-[450px] overflow-y-auto custom-scrollbar">
           {activities.map(act => {
             const subs = Array.from((act.subActivities as Map<number, any>).values());
             return (

@@ -18,7 +18,7 @@ export default function Worker() {
   const { statusMut } = useWorkerMutations();
   const {
     open, isFetching, defaultValues,
-    openCreate, openEdit, close, submit, saving, editingId, detail
+    openCreate, openEdit, close, submit, saving, editingId,
   } = useWorkerFormModal();
 
   const {
@@ -90,9 +90,6 @@ export default function Worker() {
         districtLabel={""}
         areaLabel={""}
         jobTitleLabel={""}
-        worker={detail}
-        onToggleStatus={onToggleStatus}
-        canEditStatus={canEditStatusWorker}
       />
     </>
   );

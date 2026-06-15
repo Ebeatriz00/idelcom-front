@@ -129,7 +129,7 @@ export function OrderHeader({
               </div>
 
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-1">
-                {true && (
+                {canEditGeneralProjectAjustment && (
                   <button
                     onClick={() => onOpenSettings(selectedOrder.operationsId!)}
                     className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-blue-100/50 bg-white px-5 py-3 text-[10px] font-black uppercase tracking-widest text-[#0A1B3D] transition-all hover:bg-slate-50 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
@@ -214,7 +214,7 @@ export function OrderHeader({
                   </div>
                 )}
                 <ProgressDonut progress={progress} size={64} strokeWidth={8} />
-                {true && (
+                {canEditGeneralProjectAjustment && (
                   <button
                     onClick={() => onOpenSettings(selectedOrder.operationsId!)}
                     className="grid size-11 place-items-center rounded-lg border border-transparent text-slate-400 transition-all hover:scale-105 hover:border-slate-200 hover:bg-slate-50 hover:text-[#1A3673] hover:shadow-sm active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"

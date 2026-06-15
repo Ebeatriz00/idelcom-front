@@ -23,11 +23,12 @@ import {
   ClipboardList,
   ListChecks,
   Loader2,
-  Plus,
+
   Star,
   Trash2,
   Users,
   Copy,
+  X,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
@@ -263,6 +264,8 @@ export function WorkOrderModal({
     null,
   );
   const [tempTargetQuantity, setTempTargetQuantity] = useState<string>("");
+  const [editingNameId, setEditingNameId] = useState<number | null>(null);
+  const [tempActivityName, setTempActivityName] = useState<string>("");
   const [subActivityDrafts, setSubActivityDrafts] = useState<
     SubActivityDraft[]
   >([]);
@@ -336,6 +339,7 @@ export function WorkOrderModal({
       setExpandedActivityId(null);
       setWorkerOption(null);
       setEditingActivityId(null);
+      setEditingNameId(null);
       setSelectedActivities([]);
       if (initialData) {
         reset({
@@ -416,8 +420,33 @@ export function WorkOrderModal({
       measurementUnitId: act.measurementUnitId,
       complexityId: act.complexityId,
       targetQuantity: newQuantity,
+      parentActivityId: act.parentActivityId || null,
     });
     setEditingActivityId(null);
+  };
+
+  const onUpdateActivityName = async (act: any) => {
+    const newName = tempActivityName.trim();
+    if (!newName) {
+      setEditingNameId(null);
+      return;
+    }
+
+    if (newName === act.activityName) {
+      setEditingNameId(null);
+      return;
+    }
+
+    await updateActivity({
+      activityId: act.activityId,
+      workOrderId: act.workOrderId,
+      activityName: newName,
+      measurementUnitId: act.measurementUnitId,
+      complexityId: act.complexityId,
+      targetQuantity: act.targetQuantity,
+      parentActivityId: act.parentActivityId || null,
+    });
+    setEditingNameId(null);
   };
 
   const onDeleteActivity = async (activityId: number) => {
@@ -898,9 +927,42 @@ export function WorkOrderModal({
                                     {parent.measurementUnitName}
                                   </span>
                                 </div>
-                                <h4 className="text-xs font-black text-slate-800 tracking-tight uppercase truncate">
-                                  {parent.activityName}
-                                </h4>
+                                {editingNameId === parent.activityId ? (
+                                  <div className="flex items-center gap-1 w-full mr-2">
+                                    <input
+                                      autoFocus
+                                      type="text"
+                                      value={tempActivityName}
+                                      onChange={(e) => setTempActivityName(e.target.value)}
+                                      onBlur={() => onUpdateActivityName(parent)}
+                                      onKeyDown={(e) => {
+                                        if (e.key === "Enter") onUpdateActivityName(parent);
+                                        if (e.key === "Escape") setEditingNameId(null);
+                                      }}
+                                      className="w-full text-xs font-black text-blue-600 bg-blue-50 rounded border border-blue-400 outline-none px-2 py-0.5"
+                                    />
+                                    <button
+                                      type="button"
+                                      onMouseDown={(e) => {
+                                        e.preventDefault();
+                                        setEditingNameId(null);
+                                      }}
+                                      className="p-1 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded transition-colors"
+                                    >
+                                      <X className="size-3" />
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <h4 
+                                    onClick={() => {
+                                      setEditingNameId(parent.activityId);
+                                      setTempActivityName(parent.activityName);
+                                    }}
+                                    className="text-xs font-black text-slate-800 tracking-tight uppercase truncate cursor-pointer hover:text-blue-600 transition-colors"
+                                  >
+                                    {parent.activityName}
+                                  </h4>
+                                )}
                                 {children.length > 0 && (
                                   <button
                                     type="button"
@@ -942,26 +1004,38 @@ export function WorkOrderModal({
                                   Meta
                                 </p>
                                 {editingActivityId === parent.activityId ? (
-                                  <input
-                                    autoFocus
-                                    type="text"
-                                    value={tempTargetQuantity}
-                                    onChange={(e) =>
-                                      setTempTargetQuantity(
-                                        e.target.value.replace(/[^0-9.]/g, ""),
-                                      )
-                                    }
-                                    onBlur={() =>
-                                      onUpdateTargetQuantity(parent)
-                                    }
-                                    onKeyDown={(e) => {
-                                      if (e.key === "Enter")
-                                        onUpdateTargetQuantity(parent);
-                                      if (e.key === "Escape")
+                                  <div className="flex items-center justify-center gap-1">
+                                    <input
+                                      autoFocus
+                                      type="text"
+                                      value={tempTargetQuantity}
+                                      onChange={(e) =>
+                                        setTempTargetQuantity(
+                                          e.target.value.replace(/[^0-9.]/g, ""),
+                                        )
+                                      }
+                                      onBlur={() =>
+                                        onUpdateTargetQuantity(parent)
+                                      }
+                                      onKeyDown={(e) => {
+                                        if (e.key === "Enter")
+                                          onUpdateTargetQuantity(parent);
+                                        if (e.key === "Escape")
+                                          setEditingActivityId(null);
+                                      }}
+                                      className="w-12 text-center text-xs font-black text-blue-600 bg-blue-50 rounded-lg py-0.5 border-1 border-blue-400 outline-none"
+                                    />
+                                    <button
+                                      type="button"
+                                      onMouseDown={(e) => {
+                                        e.preventDefault();
                                         setEditingActivityId(null);
-                                    }}
-                                    className="w-16 text-center text-xs font-black text-blue-600 bg-blue-50 rounded-lg py-0.5 border-1 border-blue-400 outline-none"
-                                  />
+                                      }}
+                                      className="p-0.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded transition-colors"
+                                    >
+                                      <X className="size-3" />
+                                    </button>
+                                  </div>
                                 ) : (
                                   <span
                                     onClick={() => {
@@ -1111,9 +1185,42 @@ export function WorkOrderModal({
                                             {child.measurementUnitName}
                                           </span>
                                         </div>
-                                        <h4 className="truncate text-xs font-black uppercase tracking-tight text-slate-800">
-                                          {child.activityName}
-                                        </h4>
+                                        {editingNameId === child.activityId ? (
+                                          <div className="flex items-center gap-1 w-full mr-2">
+                                            <input
+                                              autoFocus
+                                              type="text"
+                                              value={tempActivityName}
+                                              onChange={(e) => setTempActivityName(e.target.value)}
+                                              onBlur={() => onUpdateActivityName(child)}
+                                              onKeyDown={(e) => {
+                                                if (e.key === "Enter") onUpdateActivityName(child);
+                                                if (e.key === "Escape") setEditingNameId(null);
+                                              }}
+                                              className="w-full text-xs font-black text-blue-600 bg-blue-50 rounded border border-blue-400 outline-none px-2 py-0.5"
+                                            />
+                                            <button
+                                              type="button"
+                                              onMouseDown={(e) => {
+                                                e.preventDefault();
+                                                setEditingNameId(null);
+                                              }}
+                                              className="p-1 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded transition-colors"
+                                            >
+                                              <X className="size-3" />
+                                            </button>
+                                          </div>
+                                        ) : (
+                                          <h4 
+                                            onClick={() => {
+                                              setEditingNameId(child.activityId);
+                                              setTempActivityName(child.activityName);
+                                            }}
+                                            className="truncate text-xs font-black uppercase tracking-tight text-slate-800 cursor-pointer hover:text-blue-600 transition-colors"
+                                          >
+                                            {child.activityName}
+                                          </h4>
+                                        )}
                                       </div>
                                     </div>
 
@@ -1123,22 +1230,34 @@ export function WorkOrderModal({
                                           Meta
                                         </p>
                                         {editingActivityId === child.activityId ? (
-                                          <input
-                                            autoFocus
-                                            type="text"
-                                            value={tempTargetQuantity}
-                                            onChange={(e) =>
-                                              setTempTargetQuantity(
-                                                e.target.value.replace(/[^0-9.]/g, ""),
-                                              )
-                                            }
-                                            onBlur={() => onUpdateTargetQuantity(child)}
-                                            onKeyDown={(e) => {
-                                              if (e.key === "Enter") onUpdateTargetQuantity(child);
-                                              if (e.key === "Escape") setEditingActivityId(null);
-                                            }}
-                                            className="w-12 text-center text-[10px] font-black text-blue-600 bg-blue-50 rounded-md py-0.5 border border-blue-400 outline-none"
-                                          />
+                                          <div className="flex items-center justify-center gap-1">
+                                            <input
+                                              autoFocus
+                                              type="text"
+                                              value={tempTargetQuantity}
+                                              onChange={(e) =>
+                                                setTempTargetQuantity(
+                                                  e.target.value.replace(/[^0-9.]/g, ""),
+                                                )
+                                              }
+                                              onBlur={() => onUpdateTargetQuantity(child)}
+                                              onKeyDown={(e) => {
+                                                if (e.key === "Enter") onUpdateTargetQuantity(child);
+                                                if (e.key === "Escape") setEditingActivityId(null);
+                                              }}
+                                              className="w-10 text-center text-[10px] font-black text-blue-600 bg-blue-50 rounded-md py-0.5 border border-blue-400 outline-none"
+                                            />
+                                            <button
+                                              type="button"
+                                              onMouseDown={(e) => {
+                                                e.preventDefault();
+                                                setEditingActivityId(null);
+                                              }}
+                                              className="p-0.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded transition-colors"
+                                            >
+                                              <X className="size-2.5" />
+                                            </button>
+                                          </div>
                                         ) : (
                                           <span
                                             onClick={() => {
